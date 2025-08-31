@@ -143,10 +143,14 @@ def index():
 @app.route('/speaker_identification', methods=['POST'])
 def speaker_identification():
     """Identify the speakers in the current video"""
-    data = request.get_json()
-    denoise = data.get('denoise', False)
-    denoise_prop = data.get('denoise_prop', 0.1)
-    verification_threshold = data.get('verification_threshold', 0.2)
+    try:
+        data = request.get_json()
+        denoise = data.get('denoise', False)
+        denoise_prop = data.get('denoise_prop', 0.1)
+        verification_threshold = data.get('verification_threshold', 0.2)
+    except Exception as e:
+        print(e)
+        return jsonify({'error': f'Error loading data: {str(e)}'}), 400
 
     global current_video
     global current_file_processor

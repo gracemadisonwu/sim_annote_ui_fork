@@ -24,6 +24,15 @@ function setupEventListeners() {
             addSpeaker();
         }
     });
+
+    // Range slider event listeners
+    document.getElementById('denoiseProp').addEventListener('input', function(e) {
+        document.getElementById('denoisePropValue').textContent = e.target.value;
+    });
+
+    document.getElementById('verificationThreshold').addEventListener('input', function(e) {
+        document.getElementById('verificationThresholdValue').textContent = e.target.value;
+    });
 }
 
 // Video loading functions
@@ -157,15 +166,20 @@ function runSpeakerIdentification() {
 
     showProgressModal('Running speaker identification...', 'This process will analyze audio patterns to identify speakers.');
     
+    // Get values from UI controls
+    const denoise = document.getElementById('denoiseSwitch').checked;
+    const denoiseProp = parseFloat(document.getElementById('denoiseProp').value);
+    const verificationThreshold = parseFloat(document.getElementById('verificationThreshold').value);
+
     fetch('/speaker_identification', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            denoise: true,
-            denoise_prop: 0.1,
-            verification_threshold: 0.2
+            denoise: denoise,
+            denoise_prop: denoiseProp,
+            verification_threshold: verificationThreshold
         })
     })
     .then(response => response.json())

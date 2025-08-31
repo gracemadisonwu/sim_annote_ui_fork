@@ -196,3 +196,30 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* Speaker identification settings styling */
+.accordion-button:not(.collapsed) {
+    background-color: #e7f3ff;
+    color: #0c63e4;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-range {
+    height: 1.5rem;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #007bff;
+}
+
+.form-range::-moz-range-thumb {
+    background: #007bff;
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}

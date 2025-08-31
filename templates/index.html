@@ -46,6 +46,57 @@
                             </button>
                         </div>
 
+                        <!-- Speaker Identification Settings -->
+                        <div class="mt-4">
+                            <div class="accordion" id="speakerSettingsAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="speakerSettingsHeader">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#speakerSettingsCollapse" aria-expanded="false" aria-controls="speakerSettingsCollapse">
+                                            <i class="fas fa-cog"></i> Speaker Identification Settings
+                                        </button>
+                                    </h2>
+                                    <div id="speakerSettingsCollapse" class="accordion-collapse collapse" aria-labelledby="speakerSettingsHeader" data-bs-parent="#speakerSettingsAccordion">
+                                        <div class="accordion-body">
+                                            <!-- Denoise Control -->
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="denoiseSwitch" checked>
+                                                <label class="form-check-label" for="denoiseSwitch">
+                                                    <i class="fas fa-volume-mute"></i> Enable Denoising
+                                                </label>
+                                                <small class="form-text text-muted d-block">Reduce background noise in audio</small>
+                                            </div>
+
+                                            <!-- Denoise Proportion -->
+                                            <div class="mb-3">
+                                                <label for="denoiseProp" class="form-label">
+                                                    <i class="fas fa-sliders-h"></i> Denoise Proportion
+                                                </label>
+                                                <input type="range" class="form-range" id="denoiseProp" min="0.0" max="1.0" step="0.05" value="0.1">
+                                                <div class="d-flex justify-content-between">
+                                                    <small class="text-muted">0.0 (No denoising)</small>
+                                                    <small class="text-muted" id="denoisePropValue">0.1</small>
+                                                    <small class="text-muted">1.0 (Maximum denoising)</small>
+                                                </div>
+                                            </div>
+
+                                            <!-- Verification Threshold -->
+                                            <div class="mb-3">
+                                                <label for="verificationThreshold" class="form-label">
+                                                    <i class="fas fa-shield-alt"></i> Verification Threshold
+                                                </label>
+                                                <input type="range" class="form-range" id="verificationThreshold" min="0.0" max="1.0" step="0.05" value="0.2">
+                                                <div class="d-flex justify-content-between">
+                                                    <small class="text-muted">0.0 (Strict)</small>
+                                                    <small class="text-muted" id="verificationThresholdValue">0.2</small>
+                                                    <small class="text-muted">1.0 (Lenient)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Status -->
                         <div class="mt-3">
                             <div id="status" class="alert alert-info" style="display: none;"></div>
