@@ -25,7 +25,9 @@ def transcribe_with_whisper(file_path: str, segment_dir: str):
     
     if os.path.exists(f"{segment_dir}/whisper_results.json"):
         result = json.load(open(f"{segment_dir}/whisper_results.json"))
+    elif os.path.exists(os.path.join(os.path.dirname(file_path), "whisper_results.json")):
+        result = json.load(open(os.path.join(os.path.dirname(file_path), "whisper_results.json")))
     else:
         result = model.transcribe(file_path, word_timestamps=True)
-        json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
+    json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
     return result, file_path

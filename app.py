@@ -129,6 +129,7 @@ def whisper_transcribe():
         return jsonify({'success': True, 'result': results})
         
     except Exception as e:
+        print(e)
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 
