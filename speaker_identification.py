@@ -41,7 +41,8 @@ class FileProcessor:
     def concat_all_speaker_segments(self):
         all_speakers = set()
         for segment in self.whisper_results["segments"]:
-            all_speakers.add(segment["speaker"])
+            if "speaker" in segment:
+                all_speakers.add(segment["speaker"])
         for speaker in all_speakers:
             speaker_segments = [segment for segment in self.whisper_results["segments"] if segment["speaker"] == speaker]
             speaker_segments = sorted(speaker_segments, key=lambda x: x["start"])
@@ -54,6 +55,8 @@ class FileProcessor:
         self.concat_all_speaker_segments()
         # Iterate through each speaker and each segment
         for seg in tqdm.tqdm(self.whisper_results["segments"]):
+            if "speaker" not in seg:
+                continue
             if seg["speaker"] != "":
                 continue
             best_speaker, best_score = None, float("-inf")
