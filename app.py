@@ -121,7 +121,7 @@ def whisper_transcribe():
         os.makedirs(segments_dir, exist_ok=True)
         
         # Transcribe using Whisper
-        results, audio_path = transcribe_with_whisper(video_path, segments_dir, write_segment=True)
+        results, audio_path = transcribe_with_whisper(video_path, segments_dir)
         
         current_whisper_results = results
         current_video.update({'audio_path': audio_path})
