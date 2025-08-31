@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Transcription & Speaker Labeling</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Panel - Video Upload and Controls -->
+            <div class="col-md-4 left-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-video"></i> Video Upload & Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Video Upload -->
+                        <div class="mb-3">
+                            <label for="videoPath" class="form-label">Video File Path:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="videoPath" placeholder="Enter full path to video file">
+                                <button class="btn btn-outline-secondary" type="button" onclick="browseVideo()">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Enter the full path to your video file</small>
+                        </div>
+
+                        <!-- Control Buttons -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="loadVideo()" id="loadBtn">
+                                <i class="fas fa-play"></i> Load Video
+                            </button>
+                            <button class="btn btn-success" onclick="transcribeVideo()" id="transcribeBtn" disabled>
+                                <i class="fas fa-microphone"></i> Transcribe with Whisper
+                            </button>
+                            <button class="btn btn-info" onclick="runSpeakerIdentification()" id="speakerIdBtn" disabled>
+                                <i class="fas fa-users"></i> Run Speaker Identification
+                            </button>
+                            <button class="btn btn-warning" onclick="exportLabels()" id="exportBtn" disabled>
+                                <i class="fas fa-download"></i> Export Labels
+                            </button>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="mt-3">
+                            <div id="status" class="alert alert-info" style="display: none;"></div>
+                        </div>
+
+                        <!-- Speaker Management -->
+                        <div class="mt-4">
+                            <h6><i class="fas fa-user-tag"></i> Speaker Management</h6>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="newSpeaker" placeholder="New speaker name">
+                                <button class="btn btn-outline-primary" type="button" onclick="addSpeaker()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="speakerList" class="list-group">
+                                <!-- Speakers will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Video Player and Transcription Results -->
+            <div class="col-md-8 right-panel">
+                <!-- Video Player Card -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-play-circle"></i> Video Player</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="videoContainer">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-video fa-3x mb-3"></i>
+                                <p>Load a video to see the player here</p>
+                            </div>
+                        </div>
+                        <div id="videoControls" style="display: none;">
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="playbackSpeed" class="form-label">Playback Speed:</label>
+                                    <select class="form-select form-select-sm" id="playbackSpeed" onchange="changePlaybackSpeed()">
+                                        <option value="0.5">0.5x</option>
+                                        <option value="0.75">0.75x</option>
+                                        <option value="1" selected>1x</option>
+                                        <option value="1.25">1.25x</option>
+                                        <option value="1.5">1.5x</option>
+                                        <option value="2">2x</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Current Time:</label>
+                                    <div class="form-control-plaintext" id="currentTime">00:00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcription Segments Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Transcription Segments</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showAllSegments()">All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showUnlabeledSegments()">Unlabeled</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showLabeledSegments()">Labeled</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="segmentsContainer">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-microphone fa-3x mb-3"></i>
+                                <p>Upload a video and transcribe to see segments here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speaker Selection Modal -->
+    <div class="modal fade" id="speakerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Speaker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="speakerOptions" class="list-group">
+                        <!-- Speaker options will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Processing...</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p id="progressMessage">Please wait while processing...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
