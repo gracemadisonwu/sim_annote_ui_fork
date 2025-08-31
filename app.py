@@ -29,6 +29,12 @@ def load_video():
     
     data = request.get_json()
     video_path = data.get('video_path', '').strip()
+    # Get the absolute path of the current file
+    current_file_path = os.path.abspath(__file__)
+
+    # Get the directory name from the file path
+    current_directory = os.path.dirname(current_file_path)
+    video_path = os.path.join(current_directory, "uploads", video_path)
     
     if not video_path:
         return jsonify({'error': 'No video path provided'}), 400

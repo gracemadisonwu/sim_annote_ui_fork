@@ -6,7 +6,7 @@ import tqdm
 import json
 import torch
 
-def transcribe_with_whisper(file_path: str, segment_dir: str, write_segment=True):
+def transcribe_with_whisper(file_path: str, segment_dir: str):
     if not file_path.endswith(".wav"):
         file_path_wav = os.path.splitext(file_path)[0] + ".wav"
         if not os.path.exists(file_path_wav):
@@ -23,7 +23,9 @@ def transcribe_with_whisper(file_path: str, segment_dir: str, write_segment=True
         device = "cuda"
         model = whisper.load_model("turbo", device=device)
     
-    
-    result = model.transcribe(file_path, word_timestamps=True)
-    json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
+    if os.path.exists(f"{segment_dir}/whisper_results.json"):
+        result = json.load(open(f"{segment_dir}/whisper_results.json"))
+    else:
+        result = model.transcribe(file_path, word_timestamps=True)
+        json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
     return result, file_path
