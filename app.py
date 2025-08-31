@@ -174,13 +174,14 @@ def get_segments():
     segments = []
     if 'segments' in current_whisper_results:
         for segment in current_whisper_results['segments']:
-            segments.append({
-                'id': segment.get('id', 0),
-                'start': segment.get('start', 0.0),
-                'end': segment.get('end', 0.0),
-                'text': segment.get('text', ''),
-                'speaker': segment.get('speaker', '')
-            })
+            if len(segment.get('text', '')):
+                segments.append({
+                    'id': segment.get('id', 0),
+                    'start': segment.get('start', 0.0),
+                    'end': segment.get('end', 0.0),
+                    'text': segment.get('text', ''),
+                    'speaker': segment.get('speaker', '')
+                })
     
     return jsonify(segments)
 

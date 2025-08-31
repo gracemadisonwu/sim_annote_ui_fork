@@ -20,7 +20,7 @@ class FileProcessor:
             raise FileNotFoundError
         device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         if denoise:
-            noisy_speech, self.sr = torchaudio.load(self.file_path)
+            noisy_speech, self.sr = torchaudio.load(file_path)
             noisy_speech = noisy_speech.to(device)
             # Create TorchGating instance
             tg = TG(sr=self.sr, nonstationary=True, prop_decrease=denoise_prop).to(device)

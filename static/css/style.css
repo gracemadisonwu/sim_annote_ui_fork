@@ -170,6 +170,14 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Transcription segments container scrollable */
+#segmentsContainer {
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 5px;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
