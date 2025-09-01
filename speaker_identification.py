@@ -69,7 +69,8 @@ class FileProcessor:
                 if best_score > self.verification_threshold:
                     seg["speaker"] = best_speaker
                     self.whisper_results["segments"][seg["id"]]["speaker"] = best_speaker
-            except RuntimeError:
+            except RuntimeError as e:
+                print(e)
                 continue
         json.dump(self.whisper_results, open(self.whisper_results_file, "w+"))
         
