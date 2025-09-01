@@ -209,6 +209,8 @@ def update_segment_speaker():
             if segment.get('id') == segment_id:
                 segment['speaker'] = speaker
                 break
+    whisper_results_file = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}/whisper_results.json'
+    json.dump(current_whisper_results, open(whisper_results_file, "w"))
     
     return jsonify({'success': True, 'message': 'Speaker updated successfully'})
 
