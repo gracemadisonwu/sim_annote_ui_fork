@@ -155,9 +155,9 @@ class FileProcessor:
             if best_score > self.verification_threshold:
                 seg["speaker"] = best_speaker
                 # Also update the segment by ID if it exists
-                for segment in self.whisper_results["segments"]:
-                    if segment.get("id") == seg.get("id"):
-                        segment["speaker"] = best_speaker
+                for i in range(len(self.whisper_results["segments"])):
+                    if self.whisper_results["segments"][i].get("id") == seg.get("id"):
+                        self.whisper_results["segments"][i]["speaker"] = best_speaker
                         break
                             
             # except RuntimeError as e:

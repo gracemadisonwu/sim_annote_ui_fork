@@ -222,6 +222,9 @@ def export_labels():
     if not current_whisper_results or 'segments' not in current_whisper_results:
         return jsonify({'error': 'No segments to export'}), 400
     
+    whisper_results_file = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}/whisper_results.json'
+    current_whisper_results = json.load(open(whisper_results_file, "w"))
+    
     # Sort segments by start time
     sorted_segments = sorted(current_whisper_results['segments'], key=lambda x: x.get('start', 0))
     
