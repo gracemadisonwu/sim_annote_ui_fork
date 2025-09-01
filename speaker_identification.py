@@ -147,6 +147,7 @@ class FileProcessor:
                 # Verify the segment and try to find the best one
                 score, _ = self.verification.verify_batch(curr_audio, self.speaker_info[speaker]["reference_segments"])
                 print(score)
+                score = score.item()
                 if score > best_score:
                     best_score = score
                     best_speaker = speaker
