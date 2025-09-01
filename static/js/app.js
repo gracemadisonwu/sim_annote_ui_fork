@@ -188,6 +188,7 @@ function runSpeakerIdentification() {
         if (data.success) {
             showStatus('Speaker identification completed!', 'success');
             loadSegments(); // Reload segments with speaker assignments
+            console.log(data);
         } else {
             showStatus('Speaker identification failed: ' + data.error, 'error');
         }
