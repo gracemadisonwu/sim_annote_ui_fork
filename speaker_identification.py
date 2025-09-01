@@ -55,9 +55,7 @@ class FileProcessor:
         self.concat_all_speaker_segments()
         # Iterate through each speaker and each segment
         for seg in tqdm.tqdm(self.whisper_results["segments"]):
-            if "speaker" not in seg:
-                seg.update({"speaker": ""})
-            if seg["speaker"] != "":
+            if "speaker" in seg and seg["speaker"] != "":
                 continue
             best_speaker, best_score = None, float("-inf")
             curr_audio = self.audio[int(seg["start"] * self.sr): int(seg["end"] * self.sr)]
