@@ -196,7 +196,7 @@ def update_segment_speaker():
     segment_id = data.get('segment_id')
     speaker = data.get('speaker')
 
-    if not segment_id or not speaker:
+    if segment_id is None or not speaker:
         return jsonify({'error': 'Missing segment_id or speaker'}), 400
     
     global current_whisper_results

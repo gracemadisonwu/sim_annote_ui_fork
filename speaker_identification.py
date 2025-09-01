@@ -44,7 +44,7 @@ class FileProcessor:
             if "speaker" in segment:
                 all_speakers.add(segment["speaker"])
         for speaker in all_speakers:
-            speaker_segments = [segment for segment in self.whisper_results["segments"] if segment["speaker"] == speaker]
+            speaker_segments = [segment for segment in self.whisper_results["segments"] if "speaker" in segment and segment["speaker"] == speaker]
             speaker_segments = sorted(speaker_segments, key=lambda x: x["start"])
             speaker_segments = [self.audio[int(segment["start"] * self.sr): int(segment["end"] * self.sr)] for segment in speaker_segments]
             speaker_segments = torch.cat(speaker_segments)
