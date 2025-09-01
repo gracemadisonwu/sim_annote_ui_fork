@@ -56,7 +56,7 @@ class FileProcessor:
         # Iterate through each speaker and each segment
         for seg in tqdm.tqdm(self.whisper_results["segments"]):
             if "speaker" not in seg:
-                continue
+                seg.update({"speaker": ""})
             if seg["speaker"] != "":
                 continue
             best_speaker, best_score = None, float("-inf")
