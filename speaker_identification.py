@@ -138,31 +138,33 @@ class FileProcessor:
             
             best_speaker, best_score = None, float("-inf")
             
-            try:
-                # Ensure current audio is properly formatted
-                curr_audio = self._ensure_audio_format(curr_audio)
-                
-                for speaker in self.speaker_info:
-                    # Verify the segment and try to find the best one
-                    score, _ = self.verification.verify_batch(curr_audio, self.speaker_info[speaker]["reference_segments"])
-                    if score > best_score:
-                        best_score = score
-                        best_speaker = speaker
-                        
-                if best_score > self.verification_threshold:
-                    seg["speaker"] = best_speaker
-                    # Also update the segment by ID if it exists
-                    for segment in self.whisper_results["segments"]:
-                        if segment.get("id") == seg.get("id"):
-                            segment["speaker"] = best_speaker
-                            break
+            # try:
+            # Ensure current audio is properly formatted
+            curr_audio = self._ensure_audio_format(curr_audio)
+            print(best_speaker, best_score, self.verification_threshold, seg)
+            
+            for speaker in self.speaker_info:
+                # Verify the segment and try to find the best one
+                score, _ = self.verification.verify_batch(curr_audio, self.speaker_info[speaker]["reference_segments"])
+                if score > best_score:
+                    best_score = score
+                    best_speaker = speaker
+                    
+            if best_score > self.verification_threshold:
+                seg["speaker"] = best_speaker
+                # Also update the segment by ID if it exists
+                for segment in self.whisper_results["segments"]:
+                    if segment.get("id") == seg.get("id"):
+                        segment["speaker"] = best_speaker
+                        break
                             
-            except RuntimeError as e:
-                print(f"Runtime error processing segment {seg.get('id', 'unknown')}: {e}")
-                continue
-            except Exception as e:
-                print(f"Unexpected error processing segment {seg.get('id', 'unknown')}: {e}")
-                continue
+            # except RuntimeError as e:
+            #     print(f"Runtime error processing segment {seg.get('id', 'unknown')}: {e}")
+            #     print(best_speaker, best_score, self.verification_threshold, seg)
+            #     continue
+            # except Exception as e:
+            #     print(f"Unexpected error processing segment {seg.get('id', 'unknown')}: {e}")
+            #     continue
                 
         json.dump(self.whisper_results, open(self.whisper_results_file, "w+"))
         
