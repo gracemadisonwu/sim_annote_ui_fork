@@ -8,6 +8,7 @@ import torch
 from noisereduce.torchgate import TorchGate as TG
 import tqdm
 import glob
+import copy
 
 from speechbrain.inference.speaker import SpeakerRecognition
 
@@ -33,6 +34,7 @@ class FileProcessor:
             self.audio, self.sr = torchaudio.load(file_path)
         self.whisper_results_file = whisper_results_file
         self.whisper_results = json.load(open(whisper_results_file))
+        self.speaker_results = copy.deepcopy(self.whisper_results)
 
         # Try CUDA first, fallback to CPU if there are issues
         try:
@@ -110,6 +112,7 @@ class FileProcessor:
  
     def process(self):
         self.whisper_results = json.load(open(self.whisper_results_file))
+        self.speaker_results = copy.deepcopy(self.whisper_results)
         self.concat_all_speaker_segments()
         
         # Check if we have any reference speakers
@@ -118,7 +121,7 @@ class FileProcessor:
             return
         
         # Iterate through each segment
-        for seg in tqdm.tqdm(self.whisper_results["segments"]):
+        for seg in tqdm.tqdm(self.speaker_results["segments"]):
             if seg.get("speaker", "") != "":
                 continue
                 
@@ -145,18 +148,18 @@ class FileProcessor:
             for speaker in self.speaker_info:
                 # Verify the segment and try to find the best one
                 score, _ = self.verification.verify_batch(curr_audio, self.speaker_info[speaker]["reference_segments"])
-                score = score.mean().squeeze()
+                score = score.mean().squeeze().item()
                 if score > best_score:
                     best_score = score
                     best_speaker = speaker
                     
-            print(speaker, best_score)
+            print(best_speaker, best_score)
             if best_score > self.verification_threshold:
                 seg["speaker"] = best_speaker
                 # Also update the segment by ID if it exists
-                for i in range(len(self.whisper_results["segments"])):
-                    if self.whisper_results["segments"][i].get("id") == seg.get("id"):
-                        self.whisper_results["segments"][i]["speaker"] = best_speaker
+                for i in range(len(self.speaker_results["segments"])):
+                    if self.speaker_results["segments"][i].get("id") == seg.get("id"):
+                        self.speaker_results["segments"][i]["speaker"] = best_speaker
                         break
                             
             # except RuntimeError as e:
@@ -167,6 +170,6 @@ class FileProcessor:
             #     print(f"Unexpected error processing segment {seg.get('id', 'unknown')}: {e}")
             #     continue
                 
-        json.dump(self.whisper_results, open(self.whisper_results_file, "w+"))
+        json.dump(self.speaker_results, open(self.whisper_results_file.replace(".json", "_speaker_results.json"), "w+"))
         
         print("Finished Processing File!! <3")

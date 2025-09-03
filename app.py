@@ -164,7 +164,7 @@ def speaker_identification():
 
     current_file_processor.process()
 
-    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': current_file_processor.whisper_results})
+    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': current_file_processor.speaker_results})
 
 @app.route('/get_segments')
 def get_segments():
