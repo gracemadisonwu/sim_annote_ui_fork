@@ -16,13 +16,8 @@ app.config['UPLOAD_FOLDER'] = '/home/jovyan/shared/Siyanli/inspire-data/uploads/
 # os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('data', exist_ok=True)
 
-# Global variables to store current session data
-session["current_video"] = None
-session["current_segments"] = []
-session["current_speakers"] = []
-session["current_file_processor"] = None
 file_processor_dict = {}
-session["current_whisper_results"] = None
+
 
 @app.route('/load_vid"eo', methods=['POST'])
 def load_video():
@@ -34,6 +29,11 @@ def load_video():
 
     # # Get the directory name from the file path
     # current_directory = os.path.dirname(current_file_path)
+    # Global variables to store current session data
+    session["current_segments"] = []
+    session["current_speakers"] = []
+    session["current_file_processor"] = None
+    session["current_whisper_results"] = None
     video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
     
     if not video_path:
