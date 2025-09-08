@@ -10,10 +10,10 @@ from flask import session
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = '/home/jovyan/shared/Siyanli/inspire-data/uploads/'
 
 # Ensure upload directory exists for saving labels
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('data', exist_ok=True)
 
 # Global variables to store current session data
@@ -29,12 +29,12 @@ def load_video():
     """Handle loading a video from local file path"""
     data = request.get_json()
     video_path = data.get('video_path', '').strip()
-    # Get the absolute path of the current file
-    current_file_path = os.path.abspath(__file__)
+    # # Get the absolute path of the current file
+    # current_file_path = os.path.abspath(__file__)
 
-    # Get the directory name from the file path
-    current_directory = os.path.dirname(current_file_path)
-    video_path = os.path.join(current_directory, "uploads", video_path)
+    # # Get the directory name from the file path
+    # current_directory = os.path.dirname(current_file_path)
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
     
     if not video_path:
         return jsonify({'error': 'No video path provided'}), 400
