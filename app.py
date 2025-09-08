@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 import os
 import json
 import uuid
+import logging
 from datetime import datetime
 from pathlib import Path
 from whisper_transcribe import transcribe_with_whisper
@@ -11,6 +12,17 @@ from flask import session
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = '/home/jovyan/shared/Siyanli/inspire-data/uploads/'
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Ensure upload directory exists for saving labels
 # os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -22,8 +34,11 @@ file_processor_dict = {}
 @app.route('/load_video', methods=['POST'])
 def load_video():
     """Handle loading a video from local file path"""
+    logger.info("Received request to load video")
     data = request.get_json()
     video_path = data.get('video_path', '').strip()
+    logger.info(f"Video path requested: {video_path}")
+    
     # # Get the absolute path of the current file
     # current_file_path = os.path.abspath(__file__)
 
@@ -38,10 +53,12 @@ def load_video():
     video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
     
     if not video_path:
+        logger.error("No video path provided in request")
         return jsonify({'error': 'No video path provided'}), 400
     
     # Check if file exists
     if not os.path.exists(video_path):
+        logger.error(f"Video file not found: {video_path}")
         return jsonify({'error': 'Video file not found'}), 400
     
     # Store video information
@@ -51,6 +68,7 @@ def load_video():
         'video_url': f'/serve_video/{os.path.basename(video_path)}'
     }
     session["current_video"] = current_video
+    logger.info(f"Successfully loaded video: {current_video['filename']}")
     
     return jsonify({
         'success': True,
@@ -62,7 +80,10 @@ def load_video():
 @app.route('/serve_video/<filename>')
 def serve_video(filename):
     """Serve video files from the current video path"""
+    logger.info(f"Request to serve video file: {filename}")
+    
     if not session["current_video"] or not session["current_video"].get('filepath'):
+        logger.error("No video loaded in session")
         return jsonify({'error': 'No video loaded'}), 400
     
     video_path = session["current_video"]['filepath']
@@ -75,13 +96,14 @@ def serve_video(filename):
     # ]
     
     file_path = Path(video_path).resolve()
-    print(file_path)
+    logger.debug(f"Resolved file path: {file_path}")
     # is_allowed = any(str(file_path).startswith(allowed_dir) for allowed_dir in allowed_dirs)
     
     # if not is_allowed:
     #     return jsonify({'error': 'Access denied'}), 403
     
     if not file_path.exists():
+        logger.error(f"File not found: {file_path}")
         return jsonify({'error': 'File not found'}), 404
     
     # Determine MIME type based on file extension
@@ -98,6 +120,7 @@ def serve_video(filename):
     }
     
     mimetype = mime_types.get(file_ext, 'video/mp4')
+    logger.info(f"Serving video file: {filename} with MIME type: {mimetype}")
     
     # Serve the video file
     return send_file(
@@ -109,26 +132,34 @@ def serve_video(filename):
 @app.route('/whisper_transcribe', methods=['POST'])
 def whisper_transcribe():
     """Transcribe the current video using Whisper"""
+    logger.info("Received request to transcribe video with Whisper")
+    
     if not session["current_video"]:
+        logger.error("No video loaded for transcription")
         return jsonify({'error': 'No video loaded. Please load a video first.'}), 400
     
     video_path = session["current_video"]['filepath']
+    logger.info(f"Starting transcription for video: {video_path}")
 
     try:
         # Create segments directory
         segments_dir = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}'
         os.makedirs(segments_dir, exist_ok=True)
+        logger.info(f"Created segments directory: {segments_dir}")
         
         # Transcribe using Whisper
+        logger.info("Starting Whisper transcription process")
         results, audio_path = transcribe_with_whisper(video_path, segments_dir)
+        logger.info("Whisper transcription completed successfully")
         
         session["current_whisper_results"] = results
         session["current_video"].update({'audio_path': audio_path})
+        logger.info(f"Transcription results stored in session, audio path: {audio_path}")
         
         return jsonify({'success': True, 'result': results})
         
     except Exception as e:
-        print(e)
+        logger.error(f"Transcription failed: {str(e)}", exc_info=True)
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 
@@ -137,31 +168,39 @@ def whisper_transcribe():
 @app.route('/')
 def index():
     """Main page with video transcription and labeling interface"""
+    logger.info("Serving main page")
     return render_template('index.html')
 
 @app.route('/speaker_identification', methods=['POST'])
 def speaker_identification():
     """Identify the speakers in the current video"""
+    logger.info("Received request for speaker identification")
+    
     try:
         data = request.get_json()
         denoise = data.get('denoise', False)
         denoise_prop = data.get('denoise_prop', 0.1)
         verification_threshold = data.get('verification_threshold', 0.2)
+        logger.info(f"Speaker identification parameters - denoise: {denoise}, denoise_prop: {denoise_prop}, verification_threshold: {verification_threshold}")
     except Exception as e:
-        print(e)
+        logger.error(f"Error loading speaker identification data: {str(e)}", exc_info=True)
         return jsonify({'error': f'Error loading data: {str(e)}'}), 400
     
     if not session["current_video"]:
+        logger.error("No video loaded for speaker identification")
         return jsonify({'error': 'No video loaded'}), 400
         
     whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
+    logger.info(f"Using whisper results file: {whisper_results_file}")
 
     new_file_processor = FileProcessor(session["current_video"]['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
     file_processor_dict.update({
         session["current_video"]["filepath"]: new_file_processor
     })
 
+    logger.info("Starting speaker identification process")
     file_processor_dict[session["current_video"]["filepath"]].process()
+    logger.info("Speaker identification process completed")
 
     session["current_whisper_results"] = file_processor_dict[session["current_video"]["filepath"]].speaker_results
 
@@ -170,7 +209,10 @@ def speaker_identification():
 @app.route('/get_segments')
 def get_segments():
     """Get all current segments"""
+    logger.info("Request to get segments")
+    
     if not session["current_whisper_results"]:
+        logger.error("No transcription results available")
         return jsonify({'error': 'No transcription results available'}), 400
     
     # Extract segments from whisper results
@@ -186,6 +228,7 @@ def get_segments():
                     'speaker': segment.get('speaker', '')
                 })
     
+    logger.info(f"Returning {len(segments)} segments")
     return jsonify(segments)
 
 @app.route('/update_segment_speaker', methods=['POST'])
@@ -194,11 +237,15 @@ def update_segment_speaker():
     data = request.get_json()
     segment_id = data.get('segment_id')
     speaker = data.get('speaker')
+    
+    logger.info(f"Request to update segment {segment_id} speaker to: {speaker}")
 
     if segment_id is None or not speaker:
+        logger.error("Missing segment_id or speaker in request")
         return jsonify({'error': 'Missing segment_id or speaker'}), 400
     
     if not session["current_whisper_results"]:
+        logger.error("No transcription results available for speaker update")
         return jsonify({'error': 'No transcription results available'}), 400
     
     # Update the speaker for the segment
@@ -206,20 +253,26 @@ def update_segment_speaker():
         for segment in session["current_whisper_results"]['segments']:
             if segment.get('id') == segment_id:
                 segment['speaker'] = speaker
+                logger.info(f"Updated segment {segment_id} speaker to: {speaker}")
                 break
     whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
     json.dump(session["current_whisper_results"], open(whisper_results_file, "w"))
+    logger.info(f"Saved updated results to: {whisper_results_file}")
     
     return jsonify({'success': True, 'message': 'Speaker updated successfully'})
 
 @app.route('/export_labels')
 def export_labels():
     """Export labels in the required format for evaluation"""
+    logger.info("Request to export labels")
+    
     if not session["current_whisper_results"] or 'segments' not in session["current_whisper_results"]:
+        logger.error("No segments available for export")
         return jsonify({'error': 'No segments to export'}), 400
     
     whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
     session["current_whisper_results"] = json.load(open(whisper_results_file))
+    logger.info(f"Loaded whisper results from: {whisper_results_file}")
     
     # Sort segments by start time
     sorted_segments = sorted(session["current_whisper_results"]['segments'], key=lambda x: x.get('start', 0))
@@ -234,9 +287,12 @@ def export_labels():
                 'text': segment.get('text', '')
             })
     
+    logger.info(f"Exported {len(export_data)} labeled segments")
     return jsonify(export_data)
 
 
 
 if __name__ == '__main__':
+    logger.info("Starting Flask application")
+    logger.info("Application will run on host=0.0.0.0, port=8000")
     app.run(debug=True, host='0.0.0.0', port=8000)
