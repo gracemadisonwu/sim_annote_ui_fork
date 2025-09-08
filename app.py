@@ -67,17 +67,18 @@ def serve_video(filename):
     video_path = session["current_video"]['filepath']
     
     # Security: ensure the path is within allowed directories
-    allowed_dirs = [
-        str(Path.cwd()),  # Current working directory
-        str(Path.cwd().parent),  # Parent directory
-        str(Path.home())  # Home directory
-    ]
+    # allowed_dirs = [
+    #     str(Path.cwd()),  # Current working directory
+    #     str(Path.cwd().parent),  # Parent directory
+    #     str(Path.home())  # Home directory
+    # ]
     
     file_path = Path(video_path).resolve()
-    is_allowed = any(str(file_path).startswith(allowed_dir) for allowed_dir in allowed_dirs)
+    print(file_path)
+    # is_allowed = any(str(file_path).startswith(allowed_dir) for allowed_dir in allowed_dirs)
     
-    if not is_allowed:
-        return jsonify({'error': 'Access denied'}), 403
+    # if not is_allowed:
+    #     return jsonify({'error': 'Access denied'}), 403
     
     if not file_path.exists():
         return jsonify({'error': 'File not found'}), 404
