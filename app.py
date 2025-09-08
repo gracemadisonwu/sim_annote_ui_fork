@@ -206,7 +206,7 @@ def speaker_identification():
         logger.error("No video loaded for speaker identification")
         return jsonify({'error': 'No video loaded'}), 400
         
-    whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
+    whisper_results_file = session["current_speaker_results_file"]
     logger.info(f"Using whisper results file: {whisper_results_file}")
 
     new_file_processor = FileProcessor(session["current_video"]['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
@@ -218,6 +218,10 @@ def speaker_identification():
     file_processor_dict[session["current_video"]["filepath"]].process()
     logger.info("Speaker identification process completed")
 
+    session["current_speaker_results_file"] = whisper_results_file.replace(".json", "_speaker_results.json")
+
+    json.dump(file_processor_dict[session["current_video"]["filepath"]].speaker_results, open(session["current_speaker_results_file"], "w+"))
+
 
     return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': file_processor_dict[session["current_video"]["filepath"]].speaker_results})
 
@@ -226,7 +230,11 @@ def get_segments():
     """Get all current segments"""
     logger.info("Request to get segments")
     
-    whisper_results = load_whisper_results()
+    # If there is a speaker results file, load it
+    if session.get("current_speaker_results_file"):
+        whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
+    else:
+        whisper_results = load_whisper_results()
     if not whisper_results:
         logger.error("No transcription results available")
         return jsonify({'error': 'No transcription results available'}), 400
@@ -260,7 +268,10 @@ def update_segment_speaker():
         logger.error("Missing segment_id or speaker in request")
         return jsonify({'error': 'Missing segment_id or speaker'}), 400
     
-    whisper_results = load_whisper_results()
+    if session.get("current_speaker_results_file"):
+        whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
+    else:
+        whisper_results = load_whisper_results()
     if not whisper_results:
         logger.error("No transcription results available for speaker update")
         return jsonify({'error': 'No transcription results available'}), 400
@@ -274,7 +285,7 @@ def update_segment_speaker():
                 break
     
     # Save the updated results back to file
-    whisper_results_file = session["current_whisper_results_file"]
+    whisper_results_file = session["current_speaker_results_file"]
     with open(whisper_results_file, "w") as f:
         json.dump(whisper_results, f)
     logger.info(f"Saved updated results to: {whisper_results_file}")
@@ -286,12 +297,13 @@ def export_labels():
     """Export labels in the required format for evaluation"""
     logger.info("Request to export labels")
     
-    whisper_results = load_whisper_results()
+    if session.get("current_speaker_results_file"):
+        whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
+    else:
+        whisper_results = load_whisper_results()
     if not whisper_results or 'segments' not in whisper_results:
         logger.error("No segments available for export")
         return jsonify({'error': 'No segments to export'}), 400
-    
-    logger.info(f"Loaded whisper results from: {session['current_whisper_results_file']}")
     
     # Sort segments by start time
     sorted_segments = sorted(whisper_results['segments'], key=lambda x: x.get('start', 0))
