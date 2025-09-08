@@ -318,11 +318,7 @@ function showLabeledSegments() {
 // Speaker management functions
 function loadSpeakers() {
     // For demo purposes, we'll create some default speakers
-    currentSpeakers = [
-        { name: 'Doctor', description: 'Medical professional' },
-        { name: 'Nurse', description: 'Nursing staff' },
-        { name: 'Patient', description: 'Patient or family member' }
-    ];
+    currentSpeakers = [];
     
     renderSpeakerList();
 }
