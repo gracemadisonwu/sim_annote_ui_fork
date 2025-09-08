@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from whisper_transcribe import transcribe_with_whisper
 from speaker_identification import FileProcessor
+from flask import session
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -16,17 +17,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('data', exist_ok=True)
 
 # Global variables to store current session data
-current_video = None
-current_segments = []
-current_speakers = []
-current_file_processor = None
-current_whisper_results = None
+session["current_video"] = None
+session["current_segments"] = []
+session["current_speakers"] = []
+session["current_file_processor"] = None
+file_processor_dict = {}
+session["current_whisper_results"] = None
 
-@app.route('/load_video', methods=['POST'])
+@app.route('/load_vid"eo', methods=['POST'])
 def load_video():
     """Handle loading a video from local file path"""
-    global current_video
-    
     data = request.get_json()
     video_path = data.get('video_path', '').strip()
     # Get the absolute path of the current file
@@ -49,6 +49,7 @@ def load_video():
         'filename': os.path.basename(video_path),
         'video_url': f'/serve_video/{os.path.basename(video_path)}'
     }
+    session["current_video"] = current_video
     
     return jsonify({
         'success': True,
@@ -60,12 +61,10 @@ def load_video():
 @app.route('/serve_video/<filename>')
 def serve_video(filename):
     """Serve video files from the current video path"""
-    global current_video
-    
-    if not current_video or not current_video.get('filepath'):
+    if not session["current_video"] or not session["current_video"].get('filepath'):
         return jsonify({'error': 'No video loaded'}), 400
     
-    video_path = current_video['filepath']
+    video_path = session["current_video"]['filepath']
     
     # Security: ensure the path is within allowed directories
     allowed_dirs = [
@@ -108,23 +107,21 @@ def serve_video(filename):
 @app.route('/whisper_transcribe', methods=['POST'])
 def whisper_transcribe():
     """Transcribe the current video using Whisper"""
-    global current_video, current_whisper_results
-    
-    if not current_video:
+    if not session["current_video"]:
         return jsonify({'error': 'No video loaded. Please load a video first.'}), 400
     
-    video_path = current_video['filepath']
+    video_path = session["current_video"]['filepath']
 
     try:
         # Create segments directory
-        segments_dir = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}'
+        segments_dir = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}'
         os.makedirs(segments_dir, exist_ok=True)
         
         # Transcribe using Whisper
         results, audio_path = transcribe_with_whisper(video_path, segments_dir)
         
-        current_whisper_results = results
-        current_video.update({'audio_path': audio_path})
+        session["current_whisper_results"] = results
+        session["current_video"].update({'audio_path': audio_path})
         
         return jsonify({'success': True, 'result': results})
         
@@ -151,36 +148,33 @@ def speaker_identification():
     except Exception as e:
         print(e)
         return jsonify({'error': f'Error loading data: {str(e)}'}), 400
-
-    global current_video
-    global current_file_processor
     
-    if not current_video:
+    if not session["current_video"]:
         return jsonify({'error': 'No video loaded'}), 400
         
-    whisper_results_file = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}/whisper_results.json'
+    whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
 
-    current_file_processor = FileProcessor(current_video['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
+    new_file_processor = FileProcessor(session["current_video"]['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
+    file_processor_dict.update({
+        session["current_video"]["filepath"]: new_file_processor
+    })
 
-    current_file_processor.process()
+    file_processor_dict[session["current_video"]["filepath"]].process()
 
-    global current_whisper_results
-    current_whisper_results = current_file_processor.speaker_results
+    session["current_whisper_results"] = file_processor_dict[session["current_video"]["filepath"]].speaker_results
 
-    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': current_file_processor.speaker_results})
+    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': file_processor_dict[session["current_video"]["filepath"]].speaker_results})
 
 @app.route('/get_segments')
 def get_segments():
     """Get all current segments"""
-    global current_whisper_results
-    
-    if not current_whisper_results:
+    if not session["current_whisper_results"]:
         return jsonify({'error': 'No transcription results available'}), 400
     
     # Extract segments from whisper results
     segments = []
-    if 'segments' in current_whisper_results:
-        for segment in current_whisper_results['segments']:
+    if 'segments' in session["current_whisper_results"]:
+        for segment in session["current_whisper_results"]['segments']:
             if len(segment.get('text', '')):
                 segments.append({
                     'id': segment.get('id', 0),
@@ -202,34 +196,31 @@ def update_segment_speaker():
     if segment_id is None or not speaker:
         return jsonify({'error': 'Missing segment_id or speaker'}), 400
     
-    global current_whisper_results
-    if not current_whisper_results:
+    if not session["current_whisper_results"]:
         return jsonify({'error': 'No transcription results available'}), 400
     
     # Update the speaker for the segment
-    if 'segments' in current_whisper_results:
-        for segment in current_whisper_results['segments']:
+    if 'segments' in session["current_whisper_results"]:
+        for segment in session["current_whisper_results"]['segments']:
             if segment.get('id') == segment_id:
                 segment['speaker'] = speaker
                 break
-    whisper_results_file = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}/whisper_results.json'
-    json.dump(current_whisper_results, open(whisper_results_file, "w"))
+    whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
+    json.dump(session["current_whisper_results"], open(whisper_results_file, "w"))
     
     return jsonify({'success': True, 'message': 'Speaker updated successfully'})
 
 @app.route('/export_labels')
 def export_labels():
     """Export labels in the required format for evaluation"""
-    global current_whisper_results
-    
-    if not current_whisper_results or 'segments' not in current_whisper_results:
+    if not session["current_whisper_results"] or 'segments' not in session["current_whisper_results"]:
         return jsonify({'error': 'No segments to export'}), 400
     
-    whisper_results_file = f'data/segments-{current_video["filepath"].split("/")[-1].split(".")[0]}/whisper_results.json'
-    current_whisper_results = json.load(open(whisper_results_file))
+    whisper_results_file = f'data/segments-{session["current_video"]["filepath"].split("/")[-2]}/whisper_results.json'
+    session["current_whisper_results"] = json.load(open(whisper_results_file))
     
     # Sort segments by start time
-    sorted_segments = sorted(current_whisper_results['segments'], key=lambda x: x.get('start', 0))
+    sorted_segments = sorted(session["current_whisper_results"]['segments'], key=lambda x: x.get('start', 0))
     
     export_data = []
     for segment in sorted_segments:
