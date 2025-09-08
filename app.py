@@ -19,7 +19,7 @@ os.makedirs('data', exist_ok=True)
 file_processor_dict = {}
 
 
-@app.route('/load_vid"eo', methods=['POST'])
+@app.route('/load_video', methods=['POST'])
 def load_video():
     """Handle loading a video from local file path"""
     data = request.get_json()
@@ -34,7 +34,8 @@ def load_video():
     session["current_speakers"] = []
     session["current_file_processor"] = None
     session["current_whisper_results"] = None
-    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
+    # video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
+    video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
     
     if not video_path:
         return jsonify({'error': 'No video path provided'}), 400
