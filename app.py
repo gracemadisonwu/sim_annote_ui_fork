@@ -35,6 +35,7 @@ def load_video():
     session["current_file_processor"] = None
     session["current_whisper_results"] = None
     video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
+    print(video_path)
     
     if not video_path:
         return jsonify({'error': 'No video path provided'}), 400
@@ -50,6 +51,8 @@ def load_video():
         'video_url': f'/serve_video/{os.path.basename(video_path)}'
     }
     session["current_video"] = current_video
+    
+    print(session)
     
     return jsonify({
         'success': True,
