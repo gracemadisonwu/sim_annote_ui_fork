@@ -317,10 +317,108 @@ def export_labels():
                 'end': segment['end'],
                 'text': segment.get('text', '')
             })
+        else:
+            export_data.append({
+                'speaker': '',
+                'start': segment['start'],
+                'end': segment['end'],
+                'text': segment.get('text', '')
+            })
     
     logger.info(f"Exported {len(export_data)} labeled segments")
     return jsonify(export_data)
 
+
+@app.route('/upload_segments', methods=['POST'])
+def upload_segments():
+    """Upload and process a segments file"""
+    logger.info("Received request to upload segments file")
+    
+    if 'file' not in request.files:
+        logger.error("No file provided in upload request")
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        logger.error("No file selected")
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.lower().endswith('.json'):
+        logger.error(f"Invalid file type: {file.filename}")
+        return jsonify({'error': 'File must be a JSON file'}), 400
+    
+    try:
+        # Read and parse the uploaded file
+        file_content = file.read().decode('utf-8')
+        segments_data = json.loads(file_content)
+        logger.info(f"Successfully parsed uploaded segments file: {file.filename}")
+        
+        # Validate the structure of the segments data
+        if not isinstance(segments_data, list):
+            logger.error("Invalid segments file format: expected array of segments")
+            return jsonify({'error': 'Invalid file format: expected array of segments'}), 400
+        
+        # Validate each segment has required fields
+        required_fields = ['speaker', 'start', 'end', 'text']
+        for i, segment in enumerate(segments_data):
+            if not isinstance(segment, dict):
+                logger.error(f"Invalid segment format at index {i}: expected object")
+                return jsonify({'error': f'Invalid segment format at index {i}: expected object'}), 400
+            
+            for field in required_fields:
+                if field not in segment:
+                    logger.error(f"Missing required field '{field}' in segment at index {i}")
+                    return jsonify({'error': f'Missing required field "{field}" in segment at index {i}'}), 400
+        
+        # Create a segments directory for the uploaded data
+        segments_dir = f'data/uploaded-segments-{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        os.makedirs(segments_dir, exist_ok=True)
+        logger.info(f"Created segments directory: {segments_dir}")
+        
+        # Convert uploaded segments to whisper results format
+        whisper_results = {
+            'segments': []
+        }
+        
+        for i, segment in enumerate(segments_data):
+            whisper_segment = {
+                'id': i,
+                'start': float(segment['start']),
+                'end': float(segment['end']),
+                'text': segment['text'],
+                'speaker': segment['speaker']
+            }
+            whisper_results['segments'].append(whisper_segment)
+        
+        # Save the processed segments to file
+        whisper_results_file = f'{segments_dir}/whisper_results.json'
+        with open(whisper_results_file, 'w') as f:
+            json.dump(whisper_results, f, indent=2)
+        
+        # Store the file path in session
+        session["current_whisper_results_file"] = whisper_results_file
+        session["current_speaker_results_file"] = whisper_results_file.replace(".json", "_speaker_results.json")
+        
+        # Also save as speaker results for consistency
+        with open(session["current_speaker_results_file"], 'w') as f:
+            json.dump(whisper_results, f, indent=2)
+        
+        logger.info(f"Successfully processed {len(segments_data)} segments from uploaded file")
+        logger.info(f"Segments saved to: {whisper_results_file}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully uploaded and processed {len(segments_data)} segments',
+            'segments_count': len(segments_data),
+            'file_path': whisper_results_file
+        })
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in uploaded file: {str(e)}")
+        return jsonify({'error': f'Invalid JSON file: {str(e)}'}), 400
+    except Exception as e:
+        logger.error(f"Error processing uploaded segments file: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

@@ -173,6 +173,13 @@ def export_labels():
                 'end': segment['end'],
                 'text': segment.get('text', '')
             })
+        else:
+            export_data.append({
+                'speaker': '',
+                'start': segment['start'],
+                'end': segment['end'],
+                'text': segment.get('text', '')
+            })
     
     return jsonify(export_data)
 

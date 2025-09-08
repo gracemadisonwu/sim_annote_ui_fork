@@ -123,6 +123,67 @@ function browseVideo() {
     showStatus('File browser not implemented in this demo. Please enter the path manually.', 'info');
 }
 
+// Segments file upload functions
+function handleSegmentsFileSelect() {
+    const fileInput = document.getElementById('segmentsFile');
+    const uploadBtn = document.getElementById('uploadSegmentsBtn');
+    
+    if (fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.type === 'application/json' || file.name.toLowerCase().endsWith('.json')) {
+            uploadBtn.disabled = false;
+            showStatus(`Selected file: ${file.name}`, 'info');
+        } else {
+            uploadBtn.disabled = true;
+            showStatus('Please select a JSON file', 'error');
+        }
+    } else {
+        uploadBtn.disabled = true;
+    }
+}
+
+function uploadSegmentsFile() {
+    const fileInput = document.getElementById('segmentsFile');
+    const uploadBtn = document.getElementById('uploadSegmentsBtn');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showStatus('Please select a file first', 'error');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    showProgressModal('Uploading segments file...', 'Processing and validating the uploaded segments.');
+    uploadBtn.disabled = true;
+    
+    fetch('/upload_segments', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProgressModal();
+        uploadBtn.disabled = false;
+        
+        if (data.success) {
+            showStatus(`Successfully uploaded ${data.segments_count} segments!`, 'success');
+            // Enable export button since we now have segments
+            document.getElementById('exportBtn').disabled = false;
+            // Load and display the segments
+            loadSegments();
+        } else {
+            showStatus('Upload failed: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        hideProgressModal();
+        uploadBtn.disabled = false;
+        showStatus('Error uploading file: ' + error.message, 'error');
+    });
+}
+
 // Transcription functions
 function transcribeVideo() {
     if (!currentVideo) {

@@ -30,6 +30,18 @@
                             <small class="form-text text-muted">Enter the full path to your video file</small>
                         </div>
 
+                        <!-- Segments File Upload -->
+                        <div class="mb-3">
+                            <label for="segmentsFile" class="form-label">Upload Segments File:</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="segmentsFile" accept=".json" onchange="handleSegmentsFileSelect()">
+                                <button class="btn btn-outline-primary" type="button" onclick="uploadSegmentsFile()" id="uploadSegmentsBtn" disabled>
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Upload a JSON file containing segments (exported format)</small>
+                        </div>
+
                         <!-- Control Buttons -->
                         <div class="d-grid gap-2">
                             <button class="btn btn-primary" onclick="loadVideo()" id="loadBtn">
