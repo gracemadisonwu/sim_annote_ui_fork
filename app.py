@@ -168,6 +168,7 @@ def whisper_transcribe():
         # Store the file path instead of the full results
         whisper_results_file = f'{segments_dir}/whisper_results.json'
         session["current_whisper_results_file"] = whisper_results_file
+        session["current_speaker_results_file"] = whisper_results_file
         json.dump(results, open(whisper_results_file, "w"))
         session["current_video"].update({'audio_path': audio_path})
         logger.info(f"Transcription results file path stored: {whisper_results_file}, audio path: {audio_path}")
@@ -231,7 +232,7 @@ def get_segments():
     logger.info("Request to get segments")
     
     # If there is a speaker results file, load it
-    if session.get("current_speaker_results_file"):
+    if session.get("current_speaker_results_file") and session.get("current_speaker_results_file") == session["current_whisper_results_file"].replace(".json", "_speaker_results.json"):
         whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
     else:
         whisper_results = load_whisper_results()
