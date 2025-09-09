@@ -285,6 +285,8 @@ def update_segment_speaker():
                 break
     
     # Save the updated results back to file
+    if not session.get("current_speaker_results_file"):
+        session["current_speaker_results_file"] = whisper_results_file.replace(".json", "_speaker_results.json")
     whisper_results_file = session["current_speaker_results_file"]
     with open(whisper_results_file, "w") as f:
         json.dump(whisper_results, f)
