@@ -3,6 +3,7 @@ let currentVideo = null;
 let currentSegments = [];
 let currentSpeakers = [];
 let currentFilter = 'all';
+let progressModalTimeout = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -162,7 +163,12 @@ function uploadSegmentsFile() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         hideProgressModal();
         uploadBtn.disabled = false;
@@ -178,9 +184,15 @@ function uploadSegmentsFile() {
         }
     })
     .catch(error => {
+        console.error('Upload error:', error);
         hideProgressModal();
         uploadBtn.disabled = false;
         showStatus('Error uploading file: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Ensure modal is hidden and button is re-enabled
+        hideProgressModal();
+        uploadBtn.disabled = false;
     });
 }
 
@@ -508,15 +520,56 @@ function showStatus(message, type) {
 
 function showProgressModal(title, message) {
     document.getElementById('progressMessage').textContent = message;
-    const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+    const modalElement = document.getElementById('progressModal');
+    
+    // Clear any existing timeout
+    if (progressModalTimeout) {
+        clearTimeout(progressModalTimeout);
+        progressModalTimeout = null;
+    }
+    
+    // Hide any existing modal first
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.hide();
+    }
+    
+    // Create and show new modal
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: false
+    });
     modal.show();
+    
+    // Set a timeout to automatically hide the modal after 5 minutes as a safety measure
+    progressModalTimeout = setTimeout(() => {
+        console.warn('Progress modal timeout - forcing hide');
+        hideProgressModal();
+    }, 300000); // 5 minutes
 }
 
 function hideProgressModal() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+    // Clear timeout
+    if (progressModalTimeout) {
+        clearTimeout(progressModalTimeout);
+        progressModalTimeout = null;
+    }
+    
+    const modalElement = document.getElementById('progressModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
     if (modal) {
         modal.hide();
+    } else {
+        // If no instance exists, create one and hide it
+        const newModal = new bootstrap.Modal(modalElement);
+        newModal.hide();
     }
+}
+
+function forceHideProgressModal() {
+    console.log('Force hiding progress modal');
+    hideProgressModal();
+    showStatus('Progress modal closed manually', 'info');
 }
 
 // Export functions
