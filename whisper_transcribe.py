@@ -27,15 +27,15 @@ def transcribe_with_whisper(file_path: str, segment_dir: str):
         model = whisper.load_model("small", device=device)
     else:
         device = "cuda"
-        model = whisper.load_model("turbo", device=device)
+        model = whisper.load_model("large", device=device)
     
     try:
-        if os.path.exists(f"{segment_dir}/whisper_results.json"):
-            result = json.load(open(f"{segment_dir}/whisper_results.json"))
-        elif os.path.exists(os.path.join(os.path.dirname(file_path), "whisper_results.json")):
-            result = json.load(open(os.path.join(os.path.dirname(file_path), "whisper_results.json")))
-        else:
-            result = model.transcribe(file_path, word_timestamps=True)
+        # if os.path.exists(f"{segment_dir}/whisper_results.json"):
+        #     result = json.load(open(f"{segment_dir}/whisper_results.json"))
+        # elif os.path.exists(os.path.join(os.path.dirname(file_path), "whisper_results.json")):
+        #     result = json.load(open(os.path.join(os.path.dirname(file_path), "whisper_results.json")))
+        # else:
+        result = model.transcribe(file_path, word_timestamps=True)
         json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
     except Exception as e:
         logger.info(str(e))
