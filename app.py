@@ -244,7 +244,7 @@ def get_segments():
     segments = []
     if 'segments' in whisper_results:
         for segment in whisper_results['segments']:
-            if len(segment.get('text', '')):
+            if len(segment.get('text', '')) and len(segment.replace(".", "")):
                 segments.append({
                     'id': segment.get('id', 0),
                     'start': segment.get('start', 0.0),
