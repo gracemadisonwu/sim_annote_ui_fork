@@ -21,9 +21,8 @@ class Evaluator:
     def compute_diarization(self):
         reference = Annotation()
         for s in self.ground_truth_dict:
-            seg = self.ground_truth_dict[s]
-            reference[Segment(seg["start"],
-                              seg["end"])] = seg["speaker"]
+            reference[Segment(s["start"],
+                              s["end"])] = s["speaker"]
         hypothesis = Annotation()
         for s in self.segment_info_dict:
             if len(s["speaker"]):
