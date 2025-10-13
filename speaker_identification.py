@@ -159,8 +159,7 @@ class FileProcessor:
                 if score > best_score:
                     best_score = score
                     best_speaker = speaker
-                    
-            print(best_speaker, best_score)
+
             if best_score > self.verification_threshold:
                 seg["speaker"] = best_speaker
                 # Also update the segment by ID if it exists
