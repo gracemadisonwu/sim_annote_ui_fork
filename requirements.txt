@@ -12,3 +12,5 @@ noisereduce
 gdown
 pyannote.audio
 jiwer
+librosa
+soundfile

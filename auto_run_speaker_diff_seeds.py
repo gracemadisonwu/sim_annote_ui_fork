@@ -51,7 +51,7 @@ if __name__ == "__main__":
     ground_truth_labels = json.load(open(ground_truth_labels))
     all_results = {}
 
-    for speaker_duration in tqdm.tqdm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]):
+    for speaker_duration in tqdm.tqdm([5, 10, 15, 20, 25, 30]):
         new_speaker_labels = rewrite_speakers(ground_truth_labels, speaker_duration)
         curr_path = args.whisper_initial_labels.replace(".json", f"_speaker_duration_{speaker_duration}.json")
         json.dump(new_speaker_labels, open(curr_path, "w"))
