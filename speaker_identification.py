@@ -34,6 +34,9 @@ class FileProcessor:
             self.audio, self.sr = torchaudio.load(file_path)
         self.whisper_results_file = whisper_results_file
         self.whisper_results = json.load(open(whisper_results_file))
+        if "segments" not in self.whisper_results:
+            new_results = {"segments": copy.deepcopy(self.whisper_results)}
+            self.whisper_results = new_results
         self.speaker_results = copy.deepcopy(self.whisper_results)
 
         # Try CUDA first, fallback to CPU if there are issues
