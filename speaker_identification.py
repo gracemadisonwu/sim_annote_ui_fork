@@ -116,6 +116,9 @@ class FileProcessor:
  
     def process(self, store_results: bool = True):
         self.whisper_results = json.load(open(self.whisper_results_file))
+        if "segments" not in self.whisper_results:
+            new_results = {"segments": copy.deepcopy(self.whisper_results)}
+            self.whisper_results = new_results
         self.speaker_results = copy.deepcopy(self.whisper_results)
         self.concat_all_speaker_segments()
         
