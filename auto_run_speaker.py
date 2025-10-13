@@ -4,6 +4,7 @@ from pyannote.core import Segment, Timeline, Annotation
 from pyannote.metrics.diarization import DiarizationErrorRate
 from jiwer import wer
 import os
+import tqdm
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from argparse import ArgumentParser
 
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     all_results = {}
 
     print("Denoising Proportion Variations === ")
-    for denoise_prop in [0.1, 0.2, 0.3, 0.4, 0.5]:
+    for denoise_prop in tqdm.tqdm([0.1, 0.2, 0.3, 0.4, 0.5]):
         speaker_results = auto_run_speaker(args.video_path, args.whisper_initial_labels, denoise=True, denoise_prop=denoise_prop, verification_threshold=0)
         evaluator = Evaluator(ground_truth_labels, speaker_results, None)
         results = evaluator.evaluate()

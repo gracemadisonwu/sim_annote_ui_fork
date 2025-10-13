@@ -11,3 +11,4 @@ scikit-learn
 noisereduce
 gdown
 pyannote.audio
+jiwer
