@@ -49,14 +49,12 @@ if __name__ == "__main__":
     whisper_initial_labels = args.whisper_initial_labels
     ground_truth_labels = args.ground_truth_labels
     ground_truth_labels = json.load(open(ground_truth_labels))
+    all_results = {}
 
     for speaker_duration in tqdm.tqdm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]):
         new_speaker_labels = rewrite_speakers(ground_truth_labels, speaker_duration)
         curr_path = args.whisper_initial_labels.replace(".json", f"_speaker_duration_{speaker_duration}.json")
         json.dump(new_speaker_labels, open(curr_path, "w"))
-
-        all_results = {}
-
         print("Denoising Proportion Variations === ")
         speaker_results = auto_run_speaker(args.video_path, curr_path, denoise=True, denoise_prop=0.2, verification_threshold=0)
         speaker_results = speaker_results["segments"]
