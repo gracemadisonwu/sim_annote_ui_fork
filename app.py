@@ -210,6 +210,9 @@ def speaker_identification():
     whisper_results_file = session["current_speaker_results_file"]
     logger.info(f"Using whisper results file: {whisper_results_file}")
 
+    if not session.get("current_video").get("audio_path"):
+        session["current_video"]["audio_path"] = session["current_video"]["filepath"].split(".")[0] + ".wav"
+
     new_file_processor = FileProcessor(session["current_video"]['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
     file_processor_dict.update({
         session["current_video"]["filepath"]: new_file_processor

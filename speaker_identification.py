@@ -110,7 +110,7 @@ class FileProcessor:
                     print(f"Error concatenating segments for speaker {speaker}: {e}")
                     continue
  
-    def process(self):
+    def process(self, store_results: bool = True):
         self.whisper_results = json.load(open(self.whisper_results_file))
         self.speaker_results = copy.deepcopy(self.whisper_results)
         self.concat_all_speaker_segments()
@@ -170,6 +170,7 @@ class FileProcessor:
             #     print(f"Unexpected error processing segment {seg.get('id', 'unknown')}: {e}")
             #     continue
                 
-        json.dump(self.speaker_results, open(self.whisper_results_file.replace(".json", "_speaker_results.json"), "w+"))
+        if store_results:
+            json.dump(self.speaker_results, open(self.whisper_results_file.replace(".json", "_speaker_results.json"), "w+"))
         
         print("Finished Processing File!! <3")
