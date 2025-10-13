@@ -67,6 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--whisper_initial_labels", type=str, default="data/whisper_results.json")
     parser.add_argument("--ground_truth_labels", type=str, default="data/ground_truth_labels.json")
     parser.add_argument("--video_path", type=str, default="data/videos/video1.mp4")
+    parser.add_argument("--output_path", type=str, default="data/all_results.json")
     args = parser.parse_args()
     whisper_initial_labels = args.whisper_initial_labels
     ground_truth_labels = args.ground_truth_labels
@@ -86,4 +87,4 @@ if __name__ == "__main__":
         evaluator = Evaluator(ground_truth_labels, speaker_results, None)
         results = evaluator.evaluate()
         all_results[denoise_prop] = results
-    json.dump(all_results, open("data/all_results.json", "w"))
+    json.dump(all_results, open(args.output_path, "w"))
