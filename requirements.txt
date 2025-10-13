@@ -10,3 +10,4 @@ scipy
 scikit-learn
 noisereduce
 gdown
+pyannote.audio
