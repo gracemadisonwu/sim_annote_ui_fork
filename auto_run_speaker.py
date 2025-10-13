@@ -75,7 +75,12 @@ if __name__ == "__main__":
     all_results = {}
 
     print("Denoising Proportion Variations === ")
-    for denoise_prop in tqdm.tqdm([0.1, 0.2, 0.3, 0.4, 0.5]):
+    speaker_results = auto_run_speaker(args.video_path, args.whisper_initial_labels, denoise=False, verification_threshold=0)
+    speaker_results = speaker_results["segments"]
+    evaluator = Evaluator(ground_truth_labels, speaker_results, None)
+    results = evaluator.evaluate()
+    all_results[0] = results
+    for denoise_prop in tqdm.tqdm([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]):
         speaker_results = auto_run_speaker(args.video_path, args.whisper_initial_labels, denoise=True, denoise_prop=denoise_prop, verification_threshold=0)
         speaker_results = speaker_results["segments"]
         evaluator = Evaluator(ground_truth_labels, speaker_results, None)

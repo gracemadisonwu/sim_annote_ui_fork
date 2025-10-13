@@ -128,7 +128,7 @@ class FileProcessor:
             return
         
         # Iterate through each segment
-        for seg in tqdm.tqdm(self.speaker_results["segments"]):
+        for seg in self.speaker_results["segments"]:
             if seg.get("speaker", "") != "":
                 continue
                 
