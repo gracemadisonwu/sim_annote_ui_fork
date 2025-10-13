@@ -77,6 +77,7 @@ class FileProcessor:
 
     def concat_all_speaker_segments(self):
         all_speakers = set()
+        print(self.whisper_results)
         for segment in self.whisper_results["segments"]:
             if segment.get("speaker"):  # Only process segments that already have speakers
                 all_speakers.add(segment["speaker"])
