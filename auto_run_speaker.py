@@ -13,21 +13,22 @@ class Evaluator:
                  segment_info_dict,
                  pred_trans_text: str):
         self.ground_truth_dict = ground_truth_dict
+        self.ground_truth_dict = [s for s in self.ground_truth_dict if s["text"]]
         self.segment_info_dict = segment_info_dict
+        self.segment_info_dict = [s for s in self.segment_info_dict if s["text"]]
         self.pred_trans_text = pred_trans_text
 
     def compute_diarization(self):
         reference = Annotation()
-        for s in self.ground_truth_dict["segments"]:
-            seg = self.ground_truth_dict["segments"][s]
+        for s in self.ground_truth_dict:
+            seg = self.ground_truth_dict[s]
             reference[Segment(seg["start"],
                               seg["end"])] = seg["speaker"]
         hypothesis = Annotation()
         for s in self.segment_info_dict:
-            seg = self.segment_info_dict[s]
-            if len(seg["speaker_preds"]):
-                hypothesis[Segment(seg["start"],
-                                seg["end"])] = seg["speaker_preds"][0][0]
+            if len(s["speaker"]):
+                hypothesis[Segment(s["start"],
+                                s["end"])] = s["speaker"]
         metric = DiarizationErrorRate()
         return metric(reference, hypothesis)
     
@@ -37,11 +38,11 @@ class Evaluator:
     
     def compute_speaker_classifciation_f1(self):
         try:
-            assert len(self.ground_truth_dict["segments"]) == len(self.segment_info_dict["segments"])
+            assert len(self.ground_truth_dict) == len(self.segment_info_dict)
         except AssertionError:
             return -1
-        g_s = [g["speaker"] for g in self.ground_truth_dict["segments"]]
-        p_s = [p["speaker"] for p in self.segment_info_dict["segments"]]
+        g_s = [g["speaker"] for g in self.ground_truth_dict]
+        p_s = [p["speaker"] for p in self.segment_info_dict]
         results = {}
         results["precision"], results["recall"], results["f1"], results["support"] = precision_recall_fscore_support(g_s, p_s, average='weighted')
         results["accuracy"] = accuracy_score(g_s, p_s)
@@ -49,12 +50,10 @@ class Evaluator:
 
     def evaluate(self):
         results = {}
-        if "segments" in self.ground_truth_path:
-            results["diarization"] = self.compute_diarization()
-        if "text" in self.ground_truth_dict:
-            results["wer"] = self.compute_wer()
-        if "segments" in self.segment_info_dict:
-            results["speaker_classification_f1"] = self.compute_speaker_classifciation_f1()
+        results["diarization"] = self.compute_diarization()
+        # if "text" in self.ground_truth_dict:
+        #     results["wer"] = self.compute_wer()
+        results["speaker_classification_f1"] = self.compute_speaker_classifciation_f1()
         return results
         
 
