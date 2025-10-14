@@ -15,7 +15,7 @@ from scipy import signal
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['UPLOAD_FOLDER'] = '/home/jovyan/shared/Siyanli/inspire-data/uploads/'
+app.config['UPLOAD_FOLDER'] = "/content/drive/MyDrive/all_videos/"
 
 # Configure logging
 logging.basicConfig(
@@ -66,8 +66,8 @@ def load_video():
     session["current_speakers"] = []
     session["current_file_processor"] = None
     session["current_whisper_results_file"] = None
-    # video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
-    video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
+    # video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
     
     if not video_path:
         logger.error("No video path provided in request")
@@ -106,8 +106,8 @@ def load_audio():
     if "current_audio" not in session:
         session["current_audio"] = {}
     
-    # audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_path)
-    audio_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", audio_path)
+    audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_path)
+    # audio_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", audio_path)
     
     if not audio_path:
         logger.error("No audio path provided in request")

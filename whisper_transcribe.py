@@ -11,7 +11,7 @@ import logging
 logger = getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def transcribe_with_whisper(file_path: str, segment_dir: str):
+def transcribe_with_whisper(file_path: str, segment_dir: str, save_json: bool = True):
     if not file_path.endswith(".wav"):
         file_path_wav = os.path.splitext(file_path)[0] + ".wav"
         if not os.path.exists(file_path_wav):
@@ -36,7 +36,8 @@ def transcribe_with_whisper(file_path: str, segment_dir: str):
         #     result = json.load(open(os.path.join(os.path.dirname(file_path), "whisper_results.json")))
         # else:
         result = model.transcribe(file_path, word_timestamps=True)
-        json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
+        if save_json:
+            json.dump(result, open(f"{segment_dir}/whisper_results.json", "w"))
     except Exception as e:
         logger.info(str(e))
     return result, file_path
