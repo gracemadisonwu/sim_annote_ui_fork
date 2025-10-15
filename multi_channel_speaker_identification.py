@@ -84,7 +84,7 @@ class MultiChannelFileProcessor:
     
     def extract_channels_from_audio(self, file_path: str):
         for channel in range(len(self.audio)):
-            if not os.path.exists(f"{file_path.lower().replace('.wav', f'_channel_{channel}.wav')}"):
+            if not os.path.exists(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}"):
                 curr_audio = self.audio[channel, :]
                 curr_audio = self._ensure_audio_format(curr_audio)
                 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -93,9 +93,9 @@ class MultiChannelFileProcessor:
                 tg = TG(sr=self.sr, nonstationary=True, prop_decrease=0.2).to(device)
                 # Apply Spectral Gate to noisy speech signal
                 enhanced_speech = tg(curr_audio)
-                torchaudio.save(f"{file_path.lower().replace('.wav', f'_channel_{channel}.wav')}", src=enhanced_speech.cpu(), sample_rate=self.sr)
+                torchaudio.save(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", src=enhanced_speech.cpu(), sample_rate=self.sr)
                 torch.cuda.empty_cache()
-            self.channel_transcripts[channel], _ = transcribe_with_whisper(f"{file_path.lower().replace('.wav', f'_channel_{channel}.wav')}", "data/segments-channel_{channel}", save_json=False)
+            self.channel_transcripts[channel], _ = transcribe_with_whisper(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", "data/segments-channel_{channel}", save_json=False)
 
     def extract_speaker_from_whisper(self):
         for s in self.whisper_results["segments"]:
