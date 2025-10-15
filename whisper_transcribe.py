@@ -16,7 +16,10 @@ def transcribe_with_whisper(file_path: str, segment_dir: str, save_json: bool = 
         file_path_wav = os.path.splitext(file_path)[0] + ".wav"
         if not os.path.exists(file_path_wav):
             clip = VideoFileClip(file_path)
-            clip.audio.write_audiofile(file_path_wav)
+            if file_path.lower().endswith(".mov"):
+                clip.audio.write_audiofile(file_path_wav, codec='pcm_s16le')
+            else:
+                clip.audio.write_audiofile(file_path_wav)
         file_path = file_path_wav
     else:
         file_path = file_path
