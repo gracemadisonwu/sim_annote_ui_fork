@@ -763,6 +763,12 @@ function showProgressModal(title, message) {
         keyboard: false
     });
     modal.show();
+
+    // Set a timeout to automatically hide the modal after 5 minutes as a safety measure
+    progressModalTimeout = setTimeout(() => {
+        console.warn('Progress modal timeout - forcing hide');
+        hideProgressModal();
+    }, 300000); // 5 minutes
 }
 
 function hideProgressModal() {
