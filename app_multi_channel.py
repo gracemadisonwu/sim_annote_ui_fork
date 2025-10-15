@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from whisper_transcribe import transcribe_with_whisper
-from speaker_identification import FileProcessor
+from multi_channel_speaker_identification import MultiChannelFileProcessor
 from flask import session
 import librosa
 import numpy as np
@@ -273,28 +273,29 @@ def speaker_identification():
     if not session["current_video"]:
         logger.error("No video loaded for speaker identification")
         return jsonify({'error': 'No video loaded'}), 400
+    
+    if not session["current_audio"]:
+        logger.error("No audio loaded for speaker identification")
+        return jsonify({'error': 'No audio loaded'}), 400
         
     whisper_results_file = session["current_speaker_results_file"]
     logger.info(f"Using whisper results file: {whisper_results_file}")
 
-    if not session.get("current_video").get("audio_path"):
-        session["current_video"]["audio_path"] = session["current_video"]["filepath"].split(".")[0] + ".wav"
-
-    new_file_processor = FileProcessor(session["current_video"]['audio_path'], whisper_results_file, denoise, denoise_prop, verification_threshold)
+    new_file_processor = MultiChannelFileProcessor(session["current_audio"]["filepath"], whisper_results_file, denoise, denoise_prop, verification_threshold)
     file_processor_dict.update({
-        session["current_video"]["filepath"]: new_file_processor
+        session["current_audio"]["filepath"]: new_file_processor
     })
 
     logger.info("Starting speaker identification process")
-    file_processor_dict[session["current_video"]["filepath"]].process()
+    file_processor_dict[session["current_audio"]["filepath"]].process()
     logger.info("Speaker identification process completed")
 
     session["current_speaker_results_file"] = whisper_results_file.replace(".json", "_speaker_results.json")
 
-    json.dump(file_processor_dict[session["current_video"]["filepath"]].speaker_results, open(session["current_speaker_results_file"], "w+"))
+    json.dump(file_processor_dict[session["current_audio"]["filepath"]].speaker_results, open(session["current_speaker_results_file"], "w+"))
 
 
-    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': file_processor_dict[session["current_video"]["filepath"]].speaker_results})
+    return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': file_processor_dict[session["current_audio"]["filepath"]].speaker_results})
 
 @app.route('/get_segments')
 def get_segments():

@@ -62,8 +62,8 @@ def load_video():
     session["current_speakers"] = []
     session["current_file_processor"] = None
     session["current_whisper_results_file"] = None
-    # video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
-    video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
+    # video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
     
     if not video_path:
         logger.error("No video path provided in request")
