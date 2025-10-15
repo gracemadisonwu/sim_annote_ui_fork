@@ -161,31 +161,31 @@ def load_audio():
 def serve_video(filename):
     """Serve video files from the current video path"""
     logger.info(f"Request to serve video file: {filename}")
-    
+
     if not session["current_video"] or not session["current_video"].get('filepath'):
         logger.error("No video loaded in session")
         return jsonify({'error': 'No video loaded'}), 400
-    
+
     video_path = session["current_video"]['filepath']
-    
+
     # Security: ensure the path is within allowed directories
     # allowed_dirs = [
     #     str(Path.cwd()),  # Current working directory
     #     str(Path.cwd().parent),  # Parent directory
     #     str(Path.home())  # Home directory
     # ]
-    
+
     file_path = Path(video_path).resolve()
     logger.debug(f"Resolved file path: {file_path}")
     # is_allowed = any(str(file_path).startswith(allowed_dir) for allowed_dir in allowed_dirs)
-    
+
     # if not is_allowed:
     #     return jsonify({'error': 'Access denied'}), 403
-    
+
     if not file_path.exists():
         logger.error(f"File not found: {file_path}")
         return jsonify({'error': 'File not found'}), 404
-    
+
     # Determine MIME type based on file extension
     file_ext = file_path.suffix.lower()
     mime_types = {
@@ -198,11 +198,51 @@ def serve_video(filename):
         '.mkv': 'video/x-matroska',
         '.m4v': 'video/x-m4v'
     }
-    
+
     mimetype = mime_types.get(file_ext, 'video/mp4')
     logger.info(f"Serving video file: {filename} with MIME type: {mimetype}")
-    
+
     # Serve the video file
+    return send_file(
+        file_path,
+        mimetype=mimetype,
+        as_attachment=False
+    )
+
+@app.route('/serve_audio/<filename>')
+def serve_audio(filename):
+    """Serve audio files from the current audio path"""
+    logger.info(f"Request to serve audio file: {filename}")
+
+    if not session.get("current_audio") or not session["current_audio"].get('filepath'):
+        logger.error("No audio loaded in session")
+        return jsonify({'error': 'No audio loaded'}), 400
+
+    audio_path = session["current_audio"]['filepath']
+
+    file_path = Path(audio_path).resolve()
+    logger.debug(f"Resolved audio file path: {file_path}")
+
+    if not file_path.exists():
+        logger.error(f"Audio file not found: {file_path}")
+        return jsonify({'error': 'Audio file not found'}), 404
+
+    # Determine MIME type based on file extension
+    file_ext = file_path.suffix.lower()
+    mime_types = {
+        '.wav': 'audio/wav',
+        '.mp3': 'audio/mpeg',
+        '.ogg': 'audio/ogg',
+        '.flac': 'audio/flac',
+        '.m4a': 'audio/mp4',
+        '.aac': 'audio/aac',
+        '.wma': 'audio/x-ms-wma'
+    }
+
+    mimetype = mime_types.get(file_ext, 'audio/wav')
+    logger.info(f"Serving audio file: {filename} with MIME type: {mimetype}")
+
+    # Serve the audio file
     return send_file(
         file_path,
         mimetype=mimetype,
