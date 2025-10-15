@@ -144,17 +144,29 @@ function displayAudio(audioUrl, filename) {
 }
 
 function displayVideo(videoUrl, filename) {
+    // Determine MIME type based on file extension
+    const ext = filename.toLowerCase().split('.').pop();
+    const mimeTypes = {
+        'mp4': 'video/mp4',
+        'mov': 'video/quicktime',
+        'avi': 'video/x-msvideo',
+        'wmv': 'video/x-ms-wmv',
+        'webm': 'video/webm',
+        'mkv': 'video/x-matroska'
+    };
+    const mimeType = mimeTypes[ext] || 'video/mp4';
+
     const container = document.getElementById('videoContainer');
     container.innerHTML = `
         <div class="text-center">
             <video id="videoPlayer" controls class="w-100" style="max-height: 400px;">
-                <source src="${videoUrl}" type="video/mp4">
+                <source src="${videoUrl}" type="${mimeType}">
                 Your browser does not support the video tag.
             </video>
             <p class="mt-2 text-muted">${filename}</p>
         </div>
     `;
-    
+
     // Show video player card
     document.getElementById('videoPlayerCard').style.display = 'block';
     setupVideoTimeUpdate();
