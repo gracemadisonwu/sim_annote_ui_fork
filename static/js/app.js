@@ -521,31 +521,25 @@ function showStatus(message, type) {
 function showProgressModal(title, message) {
     document.getElementById('progressMessage').textContent = message;
     const modalElement = document.getElementById('progressModal');
-    
+
     // Clear any existing timeout
     if (progressModalTimeout) {
         clearTimeout(progressModalTimeout);
         progressModalTimeout = null;
     }
-    
+
     // Hide any existing modal first
     const existingModal = bootstrap.Modal.getInstance(modalElement);
     if (existingModal) {
         existingModal.hide();
     }
-    
+
     // Create and show new modal
     const modal = new bootstrap.Modal(modalElement, {
         backdrop: 'static',
         keyboard: false
     });
     modal.show();
-    
-    // Set a timeout to automatically hide the modal after 5 minutes as a safety measure
-    progressModalTimeout = setTimeout(() => {
-        console.warn('Progress modal timeout - forcing hide');
-        hideProgressModal();
-    }, 300000); // 5 minutes
 }
 
 function hideProgressModal() {
@@ -554,7 +548,7 @@ function hideProgressModal() {
         clearTimeout(progressModalTimeout);
         progressModalTimeout = null;
     }
-    
+
     const modalElement = document.getElementById('progressModal');
     const modal = bootstrap.Modal.getInstance(modalElement);
     if (modal) {
@@ -564,12 +558,6 @@ function hideProgressModal() {
         const newModal = new bootstrap.Modal(modalElement);
         newModal.hide();
     }
-}
-
-function forceHideProgressModal() {
-    console.log('Force hiding progress modal');
-    hideProgressModal();
-    showStatus('Progress modal closed manually', 'info');
 }
 
 // Export functions
