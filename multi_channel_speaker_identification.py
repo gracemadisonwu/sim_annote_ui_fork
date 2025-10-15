@@ -34,6 +34,7 @@ class MultiChannelFileProcessor:
         #     self.audio = enhanced_speech.cpu()
         # else:
         self.audio, self.sr = torchaudio.load(file_path)
+        self.channel_transcripts = {}
         self.extract_channels_from_audio(file_path)
         self.whisper_results_file = whisper_results_file
         self.whisper_results = json.load(open(whisper_results_file))
