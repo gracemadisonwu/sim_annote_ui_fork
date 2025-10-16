@@ -111,8 +111,9 @@ class MultiChannelFileProcessor:
             speaker_channel_mapping[speaker] = []
             for channel in self.channel_transcripts:
                 for ref_seg in self.speaker_info[speaker]["reference_segments"]:
-                    if fuzz.partial_ratio(ref_seg, self.channel_transcripts[channel]["text"]) > 80:
+                    if fuzz.partial_ratio(ref_seg, self.channel_transcripts[channel]["text"]) > 60:
                         speaker_channel_mapping[speaker].append(channel)
+            speaker_channel_mapping[speaker] = list(set(speaker_channel_mapping[speaker]))
         channel_speaker_mapping = {}
         for speaker in speaker_channel_mapping:
             if len(speaker_channel_mapping[speaker]) == 1:
@@ -120,7 +121,8 @@ class MultiChannelFileProcessor:
             else:
                 all_channel_texts = [(channel, len(self.channel_transcripts[channel]["text"])) for channel in speaker_channel_mapping[speaker]]
                 all_channel_texts = sorted(all_channel_texts, key=lambda x: x[1])
-                channel_speaker_mapping[all_channel_texts[0][0]] = speaker
+                if len(all_channel_texts):
+                    channel_speaker_mapping[all_channel_texts[0][0]] = speaker
             # If more than one channel is associated with the same speaker, we need to determine the best channel
         if len(channel_speaker_mapping) != len(self.speaker_info):
             print("Some speakers are not mapped to any channel")
