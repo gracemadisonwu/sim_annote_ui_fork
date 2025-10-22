@@ -39,6 +39,10 @@ class MultiChannelFileProcessor:
         self.extract_channels_from_audio(file_path)
         self.whisper_results_file = whisper_results_file
         self.whisper_results = json.load(open(whisper_results_file))
+        
+        # Intermediate save checkpoints
+        self.channel_transcripts_path = whisper_results_file.replace(".json", "_channel_transcripts.json")
+        self.channel_speaker_mapping_path = whisper_results_file.replace(".json", "_channel_spkr.json")
         if "segments" not in self.whisper_results:
             new_results = {"segments": copy.deepcopy(self.whisper_results)}
             self.whisper_results = new_results
@@ -46,6 +50,7 @@ class MultiChannelFileProcessor:
         self.extract_speaker_from_whisper()
         self.channel_transcripts = {}
         self.channel_speaker_mapping = {}
+        self.denoise_prop = denoise_prop
 
         # Try CUDA first, fallback to CPU if there are issues
         try:
@@ -83,19 +88,23 @@ class MultiChannelFileProcessor:
         return audio_tensor
     
     def extract_channels_from_audio(self, file_path: str):
-        for channel in range(len(self.audio)):
-            if not os.path.exists(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}"):
-                curr_audio = self.audio[channel, :]
-                curr_audio = self._ensure_audio_format(curr_audio)
-                device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-                curr_audio = curr_audio.to(device)
-                # Create TorchGating instance
-                tg = TG(sr=self.sr, nonstationary=True, prop_decrease=0.2).to(device)
-                # Apply Spectral Gate to noisy speech signal
-                enhanced_speech = tg(curr_audio)
-                torchaudio.save(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", src=enhanced_speech.cpu(), sample_rate=self.sr)
-                torch.cuda.empty_cache()
-            self.channel_transcripts[channel], _ = transcribe_with_whisper(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", "data/segments-channel_{channel}", save_json=False)
+        if os.path.exists(self.channel_transcripts_path):
+            self.channel_transcripts = json.load(open(self.channel_transcripts_path))
+        else:
+            for channel in range(len(self.audio)):
+                if not os.path.exists(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}"):
+                    curr_audio = self.audio[channel, :]
+                    curr_audio = self._ensure_audio_format(curr_audio)
+                    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+                    curr_audio = curr_audio.to(device)
+                    # Create TorchGating instance
+                    tg = TG(sr=self.sr, nonstationary=True, prop_decrease=self.denoise_prop).to(device)
+                    # Apply Spectral Gate to noisy speech signal
+                    enhanced_speech = tg(curr_audio)
+                    torchaudio.save(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", src=enhanced_speech.cpu(), sample_rate=self.sr)
+                    torch.cuda.empty_cache()
+                self.channel_transcripts[channel], _ = transcribe_with_whisper(f"{file_path.replace('.wav', f'_channel_{channel}.wav')}", "data/segments-channel_{channel}", save_json=False)
+            json.dump(self.channel_transcripts, open(self.channel_transcripts_path, "w+"))
 
     def extract_speaker_from_whisper(self):
         for s in self.whisper_results["segments"]:
@@ -106,32 +115,37 @@ class MultiChannelFileProcessor:
                     self.speaker_info[s["speaker"]]["reference_segments"].append(s["text"])
     
     def extract_speaker_from_channel_transcripts(self):
-        speaker_channel_mapping = {}
-        for speaker in self.speaker_info:
-            speaker_channel_mapping[speaker] = []
-            for channel in self.channel_transcripts:
-                for ref_seg in self.speaker_info[speaker]["reference_segments"]:
-                    if fuzz.partial_ratio(ref_seg, self.channel_transcripts[channel]["text"]) > 60:
-                        speaker_channel_mapping[speaker].append(channel)
-            speaker_channel_mapping[speaker] = list(set(speaker_channel_mapping[speaker]))
-        channel_speaker_mapping = {}
-        for speaker in speaker_channel_mapping:
-            if len(speaker_channel_mapping[speaker]) == 1:
-                channel_speaker_mapping[speaker_channel_mapping[speaker][0]] = speaker
-            else:
-                all_channel_texts = [(channel, len(self.channel_transcripts[channel]["text"])) for channel in speaker_channel_mapping[speaker]]
-                all_channel_texts = sorted(all_channel_texts, key=lambda x: x[1])
-                if len(all_channel_texts):
-                    channel_speaker_mapping[all_channel_texts[0][0]] = speaker
-            # If more than one channel is associated with the same speaker, we need to determine the best channel
+        if os.path.exists(self.channel_speaker_mapping_path):
+            self.channel_speaker_mapping = json.load(open(self.channel_speaker_mapping_path))
+        else:
+            speaker_channel_mapping = {}
+            for speaker in self.speaker_info:
+                speaker_channel_mapping[speaker] = []
+                for channel in self.channel_transcripts:
+                    for ref_seg in self.speaker_info[speaker]["reference_segments"]:
+                        if fuzz.partial_ratio(ref_seg, self.channel_transcripts[channel]["text"]) > 60:
+                            speaker_channel_mapping[speaker].append(channel)
+                speaker_channel_mapping[speaker] = list(set(speaker_channel_mapping[speaker]))
+            channel_speaker_mapping = {}
+            for speaker in speaker_channel_mapping:
+                if len(speaker_channel_mapping[speaker]) == 1:
+                    channel_speaker_mapping[speaker_channel_mapping[speaker][0]] = speaker
+                else:
+                    all_channel_texts = [(channel, len(self.channel_transcripts[channel]["text"])) for channel in speaker_channel_mapping[speaker]]
+                    all_channel_texts = sorted(all_channel_texts, key=lambda x: x[1])
+                    if len(all_channel_texts):
+                        channel_speaker_mapping[all_channel_texts[0][0]] = speaker
+                # If more than one channel is associated with the same speaker, we need to determine the best channel
+        
+        self.channel_speaker_mapping = channel_speaker_mapping
         if len(channel_speaker_mapping) != len(self.speaker_info):
             print("Some speakers are not mapped to any channel")
-            return None
-        for channel in channel_speaker_mapping:
-            self.speaker_info[channel_speaker_mapping[channel]]["channel"] = channel
-        for channel in self.channel_transcripts:
-            self.channel_transcripts[channel]["speaker"] = channel_speaker_mapping[channel]
-        return channel_speaker_mapping
+        else:
+            for channel in channel_speaker_mapping:
+                self.speaker_info[channel_speaker_mapping[channel]]["channel"] = channel
+            for channel in self.channel_transcripts:
+                self.channel_transcripts[channel]["speaker"] = channel_speaker_mapping[channel]
+
     
     def anchor_audio_and_video(self):
         # Find longest utterance
