@@ -23,6 +23,8 @@ if __name__ == "__main__":
     ground_truth_labels = json.load(open(ground_truth_labels))
 
     speaker_results = json.load(open(args.predictions))
+    if "segments" in speaker_results:
+        speaker_results = speaker_results["segments"]
     evaluator = Evaluator(ground_truth_labels, speaker_results, None)
     results = evaluator.evaluate()
     json.dump(results, open(args.output_path, "w"))
