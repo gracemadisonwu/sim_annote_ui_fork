@@ -16,7 +16,7 @@ from multi_channel_speaker_identification import MultiChannelFileProcessor
 def auto_run_speaker_multi_channel(file_path: str, whisper_results_file: str, denoise: bool = False, denoise_prop: float = 0.1,
                  verification_threshold: float = 0.2):
     file_processor = MultiChannelFileProcessor(file_path, whisper_results_file, denoise, denoise_prop, verification_threshold)
-    file_processor.process(store_results=False)
+    file_processor.process()
     return file_processor.speaker_results
 
 if __name__ == "__main__":
