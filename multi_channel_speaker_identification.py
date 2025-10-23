@@ -21,6 +21,7 @@ class MultiChannelFileProcessor:
             raise FileNotFoundError
         if not os.path.exists(whisper_results_file):
             raise FileNotFoundError
+        self.denoise_prop = denoise_prop
         # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         # if denoise:
         #     noisy_speech, self.sr = torchaudio.load(file_path)
@@ -152,6 +153,7 @@ class MultiChannelFileProcessor:
         # Find longest utterance
         all_segs = copy.deepcopy(self.whisper_results["segments"])
         all_segs = sorted(all_segs, key=lambda x: x["end"] - x["start"], reverse=True)
+        print(all_segs)
         selected_seg = None
         
         while not selected_seg and len(all_segs):
@@ -163,14 +165,15 @@ class MultiChannelFileProcessor:
                     if fuzz.partial_ratio(seg["text"], longest_seg["text"]) > 60:
                         selected_seg = seg
                         break
-        diff = selected_seg["end"] - selected_seg["start"]
-        for channel in self.channel_transcripts:
-            for i in range(len(self.channel_transcripts[channel]["segments"])):
-                self.channel_transcripts[channel]["segments"][i]["start"] -= diff
-                self.channel_transcripts[channel]["segments"][i]["end"] -= diff
-        end_time = self.whisper_results["segments"][-1]["end"]
-        for channel in self.channel_transcripts:
-            self.channel_transcripts[channel]["segments"] = [x for x in self.channel_transcripts[channel]["segments"] if x["end"] < end_time]
+        if selected_seg:
+            diff = selected_seg["end"] - selected_seg["start"]
+            for channel in self.channel_transcripts:
+                for i in range(len(self.channel_transcripts[channel]["segments"])):
+                    self.channel_transcripts[channel]["segments"][i]["start"] -= diff
+                    self.channel_transcripts[channel]["segments"][i]["end"] -= diff
+            end_time = self.whisper_results["segments"][-1]["end"]
+            for channel in self.channel_transcripts:
+                self.channel_transcripts[channel]["segments"] = [x for x in self.channel_transcripts[channel]["segments"] if x["end"] < end_time]
      
     
     def process(self):
