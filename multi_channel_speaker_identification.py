@@ -36,13 +36,14 @@ class MultiChannelFileProcessor:
         self.audio, self.sr = torchaudio.load(file_path)
         self.channel_transcripts = {}
         self.speaker_info = {}
-        self.extract_channels_from_audio(file_path)
+        
         self.whisper_results_file = whisper_results_file
         self.whisper_results = json.load(open(whisper_results_file))
         
         # Intermediate save checkpoints
         self.channel_transcripts_path = whisper_results_file.replace(".json", "_channel_transcripts.json")
         self.channel_speaker_mapping_path = whisper_results_file.replace(".json", "_channel_spkr.json")
+        self.extract_channels_from_audio(file_path)
         if "segments" not in self.whisper_results:
             new_results = {"segments": copy.deepcopy(self.whisper_results)}
             self.whisper_results = new_results
