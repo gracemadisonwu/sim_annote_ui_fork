@@ -154,12 +154,13 @@ class MultiChannelFileProcessor:
         all_segs = sorted(all_segs, key=lambda x: x["end"] - x["start"], reverse=True)
         selected_seg = None
         
-        while not selected_seg:
+        while not selected_seg and len(all_segs):
             longest_seg = all_segs.pop(0)
             # Assuming that the video is shorter than the audio
             for channel in self.channel_transcripts:
                 for seg in self.channel_transcripts[channel]["segments"]:
-                    if fuzz.partial_ratio(seg["text"], longest_seg["text"]) > 70:
+                    print(fuzz.partial_ratio(seg["text"], longest_seg["text"]), seg["text"], longest_seg["text"])
+                    if fuzz.partial_ratio(seg["text"], longest_seg["text"]) > 60:
                         selected_seg = seg
                         break
         diff = selected_seg["end"] - selected_seg["start"]
