@@ -52,18 +52,12 @@ def load_video():
     video_path = data.get('video_path', '').strip()
     logger.info(f"Video path requested: {video_path}")
     
-    # # Get the absolute path of the current file
-    # current_file_path = os.path.abspath(__file__)
-
-    # # Get the directory name from the file path
-    # current_directory = os.path.dirname(current_file_path)
     # Global variables to store current session data
     session["current_segments"] = []
     session["current_speakers"] = []
     session["current_file_processor"] = None
     session["current_whisper_results_file"] = None
     video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_path)
-    # video_path = os.path.join("/home/jovyan/shared/Siyanli/inspire-data/uploads/", video_path)
     
     if not video_path:
         logger.error("No video path provided in request")
@@ -90,6 +84,7 @@ def load_video():
         'video_url': current_video['video_url']
     })
 
+
 @app.route('/serve_video/<filename>')
 def serve_video(filename):
     """Serve video files from the current video path"""
@@ -101,19 +96,8 @@ def serve_video(filename):
     
     video_path = session["current_video"]['filepath']
     
-    # Security: ensure the path is within allowed directories
-    # allowed_dirs = [
-    #     str(Path.cwd()),  # Current working directory
-    #     str(Path.cwd().parent),  # Parent directory
-    #     str(Path.home())  # Home directory
-    # ]
-    
     file_path = Path(video_path).resolve()
     logger.debug(f"Resolved file path: {file_path}")
-    # is_allowed = any(str(file_path).startswith(allowed_dir) for allowed_dir in allowed_dirs)
-    
-    # if not is_allowed:
-    #     return jsonify({'error': 'Access denied'}), 403
     
     if not file_path.exists():
         logger.error(f"File not found: {file_path}")
@@ -141,6 +125,7 @@ def serve_video(filename):
         mimetype=mimetype,
         as_attachment=False
     )
+
 
 @app.route('/whisper_transcribe', methods=['POST'])
 def whisper_transcribe():
@@ -180,13 +165,12 @@ def whisper_transcribe():
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 
-
-
 @app.route('/')
 def index():
     """Main page with video transcription and labeling interface"""
     logger.info("Serving main page")
     return render_template('index.html')
+
 
 @app.route('/speaker_identification', methods=['POST'])
 def speaker_identification():
@@ -226,8 +210,8 @@ def speaker_identification():
 
     json.dump(file_processor_dict[session["current_video"]["filepath"]].speaker_results, open(session["current_speaker_results_file"], "w+"))
 
-
     return jsonify({'success': True, 'message': 'Speaker identification completed successfully', 'results': file_processor_dict[session["current_video"]["filepath"]].speaker_results})
+
 
 @app.route('/get_segments')
 def get_segments():
@@ -259,6 +243,7 @@ def get_segments():
     
     logger.info(f"Returning {len(segments)} segments")
     return jsonify(segments)
+
 
 @app.route('/update_segment_speaker', methods=['POST'])
 def update_segment_speaker():
@@ -298,6 +283,53 @@ def update_segment_speaker():
     logger.info(f"Saved updated results to: {whisper_results_file}")
     
     return jsonify({'success': True, 'message': 'Speaker updated successfully'})
+
+
+### ADDED: new endpoint to allow editing transcript text
+@app.route('/update_segment_text', methods=['POST'])
+def update_segment_text():
+    """Update the transcript text for a segment"""
+    data = request.get_json()
+    segment_id = data.get('segment_id')
+    text = data.get('text')
+    
+    logger.info(f"Request to update segment {segment_id} text")
+
+    if segment_id is None or text is None:
+        logger.error("Missing segment_id or text in request")
+        return jsonify({'error': 'Missing segment_id or text'}), 400
+    
+    if session.get("current_speaker_results_file"):
+        whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
+    else:
+        whisper_results = load_whisper_results()
+    if not whisper_results:
+        logger.error("No transcription results available for text update")
+        return jsonify({'error': 'No transcription results available'}), 400
+    
+    segment_found = False
+    if 'segments' in whisper_results:
+        for segment in whisper_results['segments']:
+            if segment.get('id') == segment_id:
+                segment['text'] = text
+                segment_found = True
+                logger.info(f"Updated segment {segment_id} text to: {text[:50]}...")
+                break
+    
+    if not segment_found:
+        logger.error(f"Segment {segment_id} not found")
+        return jsonify({'error': f'Segment {segment_id} not found'}), 404
+    
+    if not session.get("current_speaker_results_file"):
+        session["current_speaker_results_file"] = session["current_whisper_results_file"].replace(".json", "_speaker_results.json")
+    whisper_results_file = session["current_speaker_results_file"]
+    with open(whisper_results_file, "w") as f:
+        json.dump(whisper_results, f)
+    logger.info(f"Saved updated results to: {whisper_results_file}")
+    
+    return jsonify({'success': True, 'message': 'Transcript text updated successfully'})
+### END OF ADDED FUNCTIONALITY
+
 
 @app.route('/export_labels')
 def export_labels():
@@ -355,17 +387,14 @@ def upload_segments():
         return jsonify({'error': 'File must be a JSON file'}), 400
     
     try:
-        # Read and parse the uploaded file
         file_content = file.read().decode('utf-8')
         segments_data = json.loads(file_content)
         logger.info(f"Successfully parsed uploaded segments file: {file.filename}")
         
-        # Validate the structure of the segments data
         if not isinstance(segments_data, list):
             logger.error("Invalid segments file format: expected array of segments")
             return jsonify({'error': 'Invalid file format: expected array of segments'}), 400
         
-        # Validate each segment has required fields
         required_fields = ['speaker', 'start', 'end', 'text']
         for i, segment in enumerate(segments_data):
             if not isinstance(segment, dict):
@@ -375,38 +404,29 @@ def upload_segments():
             for field in required_fields:
                 if field not in segment:
                     logger.error(f"Missing required field '{field}' in segment at index {i}")
-                    return jsonify({'error': f'Missing required field "{field}" in segment at index {i}'}), 400
+                    return jsonify({'error': f'Missing required field \"{field}\" in segment at index {i}'}), 400
         
-        # Create a segments directory for the uploaded data
-        segments_dir = f'data/uploaded-segments-{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        segments_dir = f'data/uploaded-segments-{datetime.now().strftime(\"%Y%m%d_%H%M%S\")}'
         os.makedirs(segments_dir, exist_ok=True)
         logger.info(f"Created segments directory: {segments_dir}")
         
-        # Convert uploaded segments to whisper results format
-        whisper_results = {
-            'segments': []
-        }
-        
+        whisper_results = {'segments': []}
         for i, segment in enumerate(segments_data):
-            whisper_segment = {
+            whisper_results['segments'].append({
                 'id': i,
                 'start': float(segment['start']),
                 'end': float(segment['end']),
                 'text': segment['text'],
                 'speaker': segment['speaker']
-            }
-            whisper_results['segments'].append(whisper_segment)
+            })
         
-        # Save the processed segments to file
         whisper_results_file = f'{segments_dir}/whisper_results.json'
         with open(whisper_results_file, 'w') as f:
             json.dump(whisper_results, f, indent=2)
         
-        # Store the file path in session
         session["current_whisper_results_file"] = whisper_results_file
         session["current_speaker_results_file"] = whisper_results_file.replace(".json", "_speaker_results.json")
         
-        # Also save as speaker results for consistency
         with open(session["current_speaker_results_file"], 'w') as f:
             json.dump(whisper_results, f, indent=2)
         
@@ -431,4 +451,3 @@ def upload_segments():
 if __name__ == '__main__':
     logger.info("Starting Flask application")
     logger.info("Application will run on host=0.0.0.0, port=8000")
-    app.run(debug=True, host='0.0.0.0', port=8000)
