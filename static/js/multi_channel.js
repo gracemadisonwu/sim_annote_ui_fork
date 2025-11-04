@@ -582,9 +582,14 @@ function renderSegments() {
                 <span class="segment-time" style="cursor: pointer;" onclick="seekToSegment(${segment.start})" title="Click to seek to this time">
                     ${formatTime(segment.start)} - ${formatTime(segment.end)}
                 </span>
-                <button class="btn btn-sm btn-outline-primary" onclick="selectSpeaker(${segment.id})">
-                    ${segment.speaker ? 'Change Speaker' : 'Assign Speaker'}
-                </button>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="selectSpeaker(${segment.id})">
+                        ${segment.speaker ? 'Change Speaker' : 'Assign Speaker'}
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSegment(${segment.id})" title="Delete this segment">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
             <div class="segment-text">${segment.text}</div>
             <div class="segment-speaker">
@@ -697,11 +702,11 @@ function assignSpeaker(segmentId, speakerName) {
     if (segment) {
         segment.speaker = speakerName;
         renderSegments();
-        
+
         const modal = document.getElementById('speakerModal');
         const bsModal = bootstrap.Modal.getInstance(modal);
         bsModal.hide();
-        
+
         fetch('/update_segment_speaker', {
             method: 'POST',
             headers: {
@@ -724,6 +729,40 @@ function assignSpeaker(segmentId, speakerName) {
             showStatus('Error updating speaker: ' + error.message, 'error');
         });
     }
+}
+
+function deleteSegment(segmentId) {
+    const segment = currentSegments.find(s => s.id === segmentId);
+    if (!segment) return;
+
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete this segment?\n\n"${segment.text}"\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    // Send delete request to backend
+    fetch('/delete_segment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            segment_id: segmentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Segment deleted successfully', 'success');
+            // Reload segments from backend to get updated IDs
+            loadSegments();
+        } else {
+            showStatus('Error deleting segment: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus('Error deleting segment: ' + error.message, 'error');
+    });
 }
 
 // Utility functions
