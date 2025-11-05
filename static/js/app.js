@@ -350,12 +350,15 @@ function renderSegments() {
                 title="Click to seek to this time">
                 ${formatTime(segment.start)} - ${formatTime(segment.end)}
             </span>
-            <div class="segment-actions d-flex gap-2">
+            <div class="btn-group" role="group">
                 <button class="btn btn-sm btn-outline-secondary" onclick="enableEdit(${segment.id})">
                     Edit Transcript
                 </button>
                 <button class="btn btn-sm btn-outline-primary" onclick="selectSpeaker(${segment.id})">
                     ${segment.speaker ? 'Change Speaker' : 'Assign Speaker'}
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSegment(${segment.id})" title="Delete this segment">
+                    <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
@@ -427,6 +430,28 @@ function saveEditedText(segmentId) {
     })
     .catch(err => showStatus(`Error updating text: ${err.message}`, 'error'));
 }
+
+function deleteSegment(segmentId) {
+    const segment = currentSegments.find(s => s.id === segmentId);
+    if (!segment) return;
+
+    if (!confirm(`Are you sure you want to delete this segment?\n\n"${segment.text}"\n\nThis action cannot be undone.`)) return;
+
+    fetch('/delete_segment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ segment_id: segmentId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Segment deleted successfully', 'success');
+            loadSegments();
+        } else showStatus('Error deleting segment: ' + data.error, 'error');
+    })
+    .catch(err => showStatus('Error deleting segment: ' + err.message, 'error'));
+}    
+    
 // End of Added Functionality Segment!
 function filterSegments(segments, filter) {
     switch (filter) {
