@@ -343,25 +343,31 @@ function renderSegments() {
     const filteredSegments = filterSegments(currentSegments, currentFilter);
     
     container.innerHTML = filteredSegments.map(segment => `
-        <div class="segment-item ${segment.speaker ? 'labeled' : 'unlabeled'} fade-in">
-            <div class="segment-header d-flex justify-content-between align-items-center">
-                <span class="segment-time" style="cursor: pointer;" onclick="seekToSegment(${segment.start})" title="Click to seek to this time">
-                    ${formatTime(segment.start)} - ${formatTime(segment.end)}
-                </span>
+    <div class="segment-item ${segment.speaker ? 'labeled' : 'unlabeled'} fade-in">
+        <div class="segment-header d-flex justify-content-between align-items-center">
+            <span class="segment-time" style="cursor: pointer;"
+                onclick="seekToSegment(${segment.start})" 
+                title="Click to seek to this time">
+                ${formatTime(segment.start)} - ${formatTime(segment.end)}
+            </span>
+            <div class="segment-actions d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="enableEdit(${segment.id})">
+                    Edit Transcript
+                </button>
                 <button class="btn btn-sm btn-outline-primary" onclick="selectSpeaker(${segment.id})">
                     ${segment.speaker ? 'Change Speaker' : 'Assign Speaker'}
                 </button>
             </div>
-            <div class="segment-text">${segment.text}</div>
-            <div class="segment-speaker">
-                <span class="speaker-badge ${segment.speaker ? '' : 'unassigned'}">
-                    ${segment.speaker || 'Unassigned'}
-                </span>
-            </div>
         </div>
-    `).join('');
-}
-
+        <div id="segment-text-${segment.id}" class="segment-text">${segment.text}</div>
+        <div class="segment-speaker">
+            <span class="speaker-badge ${segment.speaker ? '' : 'unassigned'}">
+                ${segment.speaker || 'Unassigned'}
+            </span>
+        </div>
+    </div>
+`).join('');
+    
 // ADDED EDIT CAPABILITY
 function enableEdit(segmentId) {
     const textDiv = document.getElementById(`segment-text-${segmentId}`);
@@ -383,7 +389,7 @@ function enableEdit(segmentId) {
 
     // Add a Save button directly after the text div
     const saveBtn = document.createElement('button');
-    saveBtn.textContent = "SAVE UPDATES";
+    saveBtn.textContent = "Save Updates";
     saveBtn.className = "btn btn-sm btn-success ms-2";
     saveBtn.setAttribute('data-save-for', String(segmentId));
     saveBtn.onclick = () => saveEditedText(segmentId);
