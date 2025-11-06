@@ -370,7 +370,7 @@ function renderSegments() {
         </div>
     </div>
 `).join('');
-    
+}    
 // ADDED EDIT CAPABILITY
 function enableEdit(segmentId) {
     const textDiv = document.getElementById(`segment-text-${segmentId}`);
