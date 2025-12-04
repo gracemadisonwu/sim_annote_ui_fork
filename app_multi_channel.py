@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 import os
 import json
 import uuid
+from moviepy.editor import VideoFileClip
 import logging
 from datetime import datetime
 from pathlib import Path
