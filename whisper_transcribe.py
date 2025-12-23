@@ -1,7 +1,7 @@
 import whisper
 import torchaudio
 import os
-from moviepy import VideoFileClip
+from moviepy.editor import VideoFileClip
 import tqdm
 import json
 import torch
