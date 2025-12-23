@@ -1,3 +1,9 @@
+import sys
+import torchaudio
+
+if not hasattr(torchaudio, 'list_audio_backends'):
+    torchaudio.list_audio_backends = lambda: ['soundfile']
+
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, send_file
 import os
 import json
