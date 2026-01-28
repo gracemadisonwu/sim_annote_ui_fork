@@ -299,6 +299,51 @@ def update_segment_speaker():
     
     return jsonify({'success': True, 'message': 'Speaker updated successfully'})
 
+@app.route('/delete_segment', methods=['POST'])
+def delete_segment():
+    """Delete a segment"""
+    data = request.get_json()
+    segment_id = data.get('segment_id')
+
+    logger.info(f"Request to delete segment {segment_id}")
+
+    if segment_id is None:
+        logger.error("Missing segment_id in request")
+        return jsonify({'error': 'Missing segment_id'}), 400
+
+    if session.get("current_speaker_results_file"):
+        whisper_results = json.load(open(session["current_speaker_results_file"], "r"))
+    else:
+        whisper_results = load_whisper_results()
+    if not whisper_results:
+        logger.error("No transcription results available for segment deletion")
+        return jsonify({'error': 'No transcription results available'}), 400
+
+    # Delete the segment
+    if 'segments' in whisper_results:
+        original_count = len(whisper_results['segments'])
+        whisper_results['segments'] = [s for s in whisper_results['segments'] if s.get('id') != segment_id]
+
+        if len(whisper_results['segments']) < original_count:
+            logger.info(f"Deleted segment {segment_id}")
+
+            # Re-index segments to maintain sequential IDs
+            for i, segment in enumerate(whisper_results['segments']):
+                segment['id'] = i
+        else:
+            logger.warning(f"Segment {segment_id} not found")
+            return jsonify({'error': 'Segment not found'}), 404
+
+    # Save the updated results back to file
+    if not session.get("current_speaker_results_file"):
+        session["current_speaker_results_file"] = session["current_whisper_results_file"].replace(".json", "_speaker_results.json")
+    whisper_results_file = session["current_speaker_results_file"]
+    with open(whisper_results_file, "w") as f:
+        json.dump(whisper_results, f)
+    logger.info(f"Saved updated results to: {whisper_results_file}")
+
+    return jsonify({'success': True, 'message': 'Segment deleted successfully'})
+
 ### NEW ENDPOINT ADDED: Allow editing transcript text ###
 @app.route('/update_segment_text', methods=['POST'])
 def update_segment_text():
